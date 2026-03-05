@@ -1,4 +1,7 @@
-import { createMemo, createResource, createSignal } from 'solid-js'
+import { createMemo, createSignal, onMount } from 'solid-js'
+import { Button } from '@kobalte/core/button'
+import { Skeleton } from '@kobalte/core/skeleton'
+import { compareAsc, differenceInCalendarWeeks, isValid, parse } from 'date-fns'
 import PWABadge from './PWABadge'
 
 type CardSize = 'sm' | 'md' | 'lg'
@@ -12,6 +15,12 @@ type WeeklySummary = {
   usage_rate: number
   alert: boolean
   record_count: number
+}
+
+type BudgetWeeksResponse = {
+  weeks: string[]
+  min_week?: string | null
+  max_week?: string | null
 }
 
 type SectionRow = {
@@ -29,7 +38,7 @@ type FolderSection = {
   rows: SectionRow[]
 }
 
-const apiBaseUrl = (import.meta.env.VITE_CMS_API_BASE_URL ?? 'https://tyange.com/api/cms').replace(
+const apiBaseUrl = (import.meta.env.VITE_CMS_API_BASE_URL ?? 'http://localhost:8080').replace(
   /\/$/,
   '',
 )
@@ -66,52 +75,6 @@ async function fetchWeeklySummary(): Promise<WeeklySummary> {
   return response.json()
 }
 
-function shiftWeekKey(weekKey: string, deltaWeeks: number): string {
-  const matched = weekKey.match(/^(\d{4})-W(\d{2})$/)
-  if (!matched) return weekKey
-
-  const year = Number(matched[1])
-  const week = Number(matched[2])
-
-  const jan4 = new Date(Date.UTC(year, 0, 4))
-  const jan4Weekday = (jan4.getUTCDay() + 6) % 7
-  const week1Monday = new Date(jan4)
-  week1Monday.setUTCDate(jan4.getUTCDate() - jan4Weekday)
-
-  const targetMonday = new Date(week1Monday)
-  targetMonday.setUTCDate(week1Monday.getUTCDate() + (week - 1 + deltaWeeks) * 7)
-
-  const thursday = new Date(targetMonday)
-  thursday.setUTCDate(targetMonday.getUTCDate() + 3)
-
-  const isoYear = thursday.getUTCFullYear()
-  const jan4OfIsoYear = new Date(Date.UTC(isoYear, 0, 4))
-  const jan4IsoWeekday = (jan4OfIsoYear.getUTCDay() + 6) % 7
-  const firstIsoMonday = new Date(jan4OfIsoYear)
-  firstIsoMonday.setUTCDate(jan4OfIsoYear.getUTCDate() - jan4IsoWeekday)
-
-  const diffDays = Math.round((targetMonday.getTime() - firstIsoMonday.getTime()) / 86400000)
-  const isoWeek = Math.floor(diffDays / 7) + 1
-
-  return `${isoYear}-W${String(isoWeek).padStart(2, '0')}`
-}
-
-function compareWeekKey(a: string, b: string): number {
-  const parse = (value: string) => {
-    const matched = value.match(/^(\d{4})-W(\d{2})$/)
-    if (!matched) return null
-    return { year: Number(matched[1]), week: Number(matched[2]) }
-  }
-
-  const left = parse(a)
-  const right = parse(b)
-  if (!left || !right) return 0
-  if (left.year !== right.year) return left.year - right.year
-  return left.week - right.week
-}
-
-type ApiError = Error & { status?: number }
-
 async function fetchWeeklySummaryByWeekKey(weekKey: string): Promise<WeeklySummary> {
   const response = await fetch(`${apiBaseUrl}/budget/weekly/${weekKey}`, {
     headers: { Accept: 'application/json' },
@@ -119,84 +82,147 @@ async function fetchWeeklySummaryByWeekKey(weekKey: string): Promise<WeeklySumma
 
   if (!response.ok) {
     const bodyText = await response.text()
-    const error = new Error(`API ${response.status}: ${bodyText || '주간 요약 조회 실패'}`) as ApiError
-    error.status = response.status
-    throw error
+    throw new Error(`API ${response.status}: ${bodyText || '주간 요약 조회 실패'}`)
   }
 
   return response.json()
 }
 
-async function fetchWeeklySummaryByWeekKeySafe(weekKey: string): Promise<WeeklySummary | null> {
-  try {
-    return await fetchWeeklySummaryByWeekKey(weekKey)
-  } catch (error) {
-    const apiError = error as ApiError
-    if (apiError.status === 404) return null
-    throw error
+async function fetchBudgetWeeks(): Promise<BudgetWeeksResponse> {
+  const response = await fetch(`${apiBaseUrl}/budget/weeks`, {
+    headers: { Accept: 'application/json' },
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '주차 목록 조회 실패'}`)
   }
+
+  return response.json()
+}
+
+function compareWeekKey(a: string, b: string): number {
+  const left = weekKeyToDate(a)
+  const right = weekKeyToDate(b)
+  if (!left || !right) return 0
+  return compareAsc(left, right)
+}
+
+function weekKeyToDate(weekKey: string): Date | null {
+  const parsed = parse(`${weekKey}-1`, "RRRR-'W'II-i", new Date())
+  if (!isValid(parsed)) return null
+  return parsed
 }
 
 function App() {
-  const [viewWeekKey, setViewWeekKey] = createSignal<string | null>(null)
-  const [touchStartX, setTouchStartX] = createSignal<number | null>(null)
+  const [summaryByWeek, setSummaryByWeek] = createSignal<Record<string, WeeklySummary>>({})
+  const [knownWeekKeys, setKnownWeekKeys] = createSignal<string[]>([])
+  const [currentWeekKey, setCurrentWeekKey] = createSignal<string | null>(null)
   const [anchorWeekKey, setAnchorWeekKey] = createSignal<string | null>(null)
+  const [touchStartX, setTouchStartX] = createSignal<number | null>(null)
+  const [loading, setLoading] = createSignal(true)
+  const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
 
-  async function findNearestAvailableWeekKey(
-    startWeekKey: string,
-    direction: 1 | -1,
-  ): Promise<string | null> {
-    const maxScan = 52
-    const batchSize = 6
-
-    for (let base = 0; base < maxScan; base += batchSize) {
-      const candidates = Array.from({ length: batchSize }, (_, index) => {
-        const delta = base + index
-        return shiftWeekKey(startWeekKey, direction * delta)
-      })
-
-      const results = await Promise.all(candidates.map((weekKey) => fetchWeeklySummaryByWeekKeySafe(weekKey)))
-      const foundIndex = results.findIndex((result) => result !== null)
-      if (foundIndex >= 0) {
-        return candidates[foundIndex]
-      }
-    }
-
-    return null
+  const normalizeWeekKeys = (weeks: string[], currentWeekKey?: string) => {
+    const unique = new Set(weeks)
+    if (currentWeekKey) unique.add(currentWeekKey)
+    return [...unique].sort(compareWeekKey)
   }
 
-  const [summary, { refetch }] = createResource(
-    () => ({ targetWeekKey: viewWeekKey() }),
-    async ({ targetWeekKey }) => {
-      if (!targetWeekKey) {
-        const current = await fetchWeeklySummary()
-        setAnchorWeekKey(current.week_key)
-        return current
-      }
+  const registerWeekSummary = (data: WeeklySummary) => {
+    setSummaryByWeek((prev) => ({ ...prev, [data.week_key]: data }))
+    setCurrentWeekKey(data.week_key)
+  }
 
-      if (!anchorWeekKey()) {
-        setAnchorWeekKey(targetWeekKey)
-      }
-      return fetchWeeklySummaryByWeekKey(targetWeekKey)
-    },
-  )
+  const loadCurrentWeek = async () => {
+    setLoading(true)
+    setErrorMessage(null)
+    try {
+      const [weeksResult, data] = await Promise.all([fetchBudgetWeeks(), fetchWeeklySummary()])
+      setAnchorWeekKey(data.week_key)
+      setKnownWeekKeys(normalizeWeekKeys(weeksResult.weeks ?? [], data.week_key))
+      registerWeekSummary(data)
+    } catch (error) {
+      setErrorMessage((error as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const [adjacentWeekKeys] = createResource(() => summary()?.week_key, async (currentWeekKey) => {
-    if (!currentWeekKey) {
-      return { prev: null as string | null, next: null as string | null }
+  onMount(() => {
+    void loadCurrentWeek()
+  })
+
+  const currentSummary = createMemo(() => {
+    const key = currentWeekKey()
+    if (!key) return null
+    return summaryByWeek()[key] ?? null
+  })
+
+  const currentWeekIndex = createMemo(() => {
+    const key = currentWeekKey()
+    if (!key) return -1
+    return knownWeekKeys().indexOf(key)
+  })
+
+  const canGoPrev = createMemo(() => !loading() && currentWeekIndex() > 0)
+  const canGoNext = createMemo(() => !loading() && currentWeekIndex() >= 0 && currentWeekIndex() < knownWeekKeys().length - 1)
+
+  const moveKnownWeek = (direction: 1 | -1) => {
+    const idx = currentWeekIndex()
+    if (idx < 0) return
+    const nextIdx = idx + direction
+    if (nextIdx < 0 || nextIdx >= knownWeekKeys().length) return
+    const targetWeekKey = knownWeekKeys()[nextIdx]
+    const cached = summaryByWeek()[targetWeekKey]
+    if (cached) {
+      setCurrentWeekKey(targetWeekKey)
+      return
     }
 
-    const [prev, next] = await Promise.all([
-      findNearestAvailableWeekKey(shiftWeekKey(currentWeekKey, -1), -1),
-      findNearestAvailableWeekKey(shiftWeekKey(currentWeekKey, 1), 1),
-    ])
+    setLoading(true)
+    setErrorMessage(null)
+    void fetchWeeklySummaryByWeekKey(targetWeekKey)
+      .then((data) => {
+        setSummaryByWeek((prev) => ({ ...prev, [data.week_key]: data }))
+        setCurrentWeekKey(data.week_key)
+      })
+      .catch((error) => {
+        setErrorMessage((error as Error).message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }
 
-    return { prev, next }
+  const usagePercent = createMemo(() => {
+    const value = currentSummary()?.usage_rate ?? 0
+    return Math.max(0, Math.min(100, value * 100))
+  })
+
+  const weekTabLabel = createMemo(() => {
+    const viewed = currentSummary()?.week_key
+    const anchor = anchorWeekKey()
+    if (!viewed || !anchor) return '조회 중'
+    const viewedDate = weekKeyToDate(viewed)
+    const anchorDate = weekKeyToDate(anchor)
+    if (!viewedDate || !anchorDate) return '조회 중'
+    const diffWeeks = differenceInCalendarWeeks(viewedDate, anchorDate, { weekStartsOn: 1 })
+    if (diffWeeks === 0) return '이번 주'
+    if (diffWeeks > 0) return `+${diffWeeks}주`
+    return `${diffWeeks}주`
+  })
+
+  const disableFutureSpendMeta = createMemo(() => {
+    const data = currentSummary()
+    const anchor = anchorWeekKey()
+    if (!data || !anchor) return false
+    return compareWeekKey(data.week_key, anchor) > 0 && data.total_spent === 0 && data.record_count === 0
   })
 
   const sections = createMemo<FolderSection[]>(() => {
-    const data = summary()
-    if (!data) {
+    const data = currentSummary()
+    if (!data || loading()) {
       return [
         {
           id: 'loading-weekly-budget',
@@ -275,48 +301,11 @@ function App() {
     ]
   })
 
-  const hasError = createMemo(() => Boolean(summary.error))
-  const errorMessage = createMemo(() => summary.error?.message ?? '알 수 없는 오류')
-  const canGoPrev = createMemo(() => Boolean(adjacentWeekKeys()?.prev) && !summary.loading && !adjacentWeekKeys.loading)
-  const canGoNext = createMemo(() => Boolean(adjacentWeekKeys()?.next) && !summary.loading && !adjacentWeekKeys.loading)
-  const usagePercent = createMemo(() => {
-    const value = summary()?.usage_rate ?? 0
-    return Math.max(0, Math.min(100, value * 100))
-  })
-  const weekTabLabel = createMemo(() => {
-    const viewed = summary()?.week_key
-    const anchor = anchorWeekKey()
-    if (!viewed || !anchor) return '조회 중'
-    const compare = compareWeekKey(viewed, anchor)
-    if (compare === 0) return '이번 주'
-    if (compare > 0) return `+${compare}주`
-    return `${compare}주`
-  })
-  const disableFutureSpendMeta = createMemo(() => {
-    const data = summary()
-    const anchor = anchorWeekKey()
-    if (!data || !anchor) return false
-    return compareWeekKey(data.week_key, anchor) > 0 && data.total_spent === 0 && data.record_count === 0
-  })
-
-  const moveWeek = (deltaWeeks: number) => {
-    if (deltaWeeks < 0) {
-      const prevWeekKey = adjacentWeekKeys()?.prev
-      if (!prevWeekKey) return
-      setViewWeekKey(prevWeekKey)
-      return
-    }
-
-    const nextWeekKey = adjacentWeekKeys()?.next
-    if (!nextWeekKey) return
-    setViewWeekKey(nextWeekKey)
-  }
-
   return (
     <div class="flex min-h-screen flex-col bg-[radial-gradient(circle_at_15%_10%,rgba(255,255,255,0.6),transparent_30%),linear-gradient(180deg,#f5f5f5_0%,#e7e7e7_100%)] text-slate-900">
       <main class="flex flex-1 items-center justify-center p-6 max-[820px]:p-4">
         <section aria-label="Dashboard" class="w-full max-w-[920px]">
-          {hasError() && (
+          {errorMessage() && (
             <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {errorMessage()}
             </div>
@@ -338,35 +327,35 @@ function App() {
                   const endX = event.changedTouches[0]?.clientX
                   if (startX == null || endX == null) return
                   const diff = endX - startX
-                  if (diff <= -40 && canGoNext()) moveWeek(1)
-                  if (diff >= 40 && canGoPrev()) moveWeek(-1)
+                  if (diff <= -40 && canGoNext()) moveKnownWeek(1)
+                  if (diff >= 40 && canGoPrev()) moveKnownWeek(-1)
                   setTouchStartX(null)
                 }}
               >
                 {section.isLoading ? (
                   <div class="animate-pulse">
-                    <div class="h-3 w-24 rounded bg-slate-300/70" />
+                    <Skeleton class="h-3 w-24 rounded bg-slate-300/70" />
                     <div class="mt-4 rounded-xl border border-slate-200 bg-white/80 p-4">
-                      <div class="h-3 w-20 rounded bg-slate-200" />
-                      <div class="mt-3 h-10 w-52 rounded bg-slate-300/70" />
-                      <div class="mt-4 h-2 w-full rounded bg-slate-200" />
+                      <Skeleton class="h-3 w-20 rounded bg-slate-200" />
+                      <Skeleton class="mt-3 h-10 w-52 rounded bg-slate-300/70" />
+                      <Skeleton class="mt-4 h-2 w-full rounded bg-slate-200" />
                     </div>
                     <div class="mt-3 grid grid-cols-2 gap-2">
                       <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
-                        <div class="h-3 w-14 rounded bg-slate-200" />
-                        <div class="mt-2 h-6 w-20 rounded bg-slate-300/70" />
+                        <Skeleton class="h-3 w-14 rounded bg-slate-200" />
+                        <Skeleton class="mt-2 h-6 w-20 rounded bg-slate-300/70" />
                       </div>
                       <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
-                        <div class="h-3 w-14 rounded bg-slate-200" />
-                        <div class="mt-2 h-6 w-24 rounded bg-slate-300/70" />
+                        <Skeleton class="h-3 w-14 rounded bg-slate-200" />
+                        <Skeleton class="mt-2 h-6 w-24 rounded bg-slate-300/70" />
                       </div>
                       <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
-                        <div class="h-3 w-16 rounded bg-slate-200" />
-                        <div class="mt-2 h-6 w-28 rounded bg-slate-300/70" />
+                        <Skeleton class="h-3 w-16 rounded bg-slate-200" />
+                        <Skeleton class="mt-2 h-6 w-28 rounded bg-slate-300/70" />
                       </div>
                       <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
-                        <div class="h-3 w-16 rounded bg-slate-200" />
-                        <div class="mt-2 h-6 w-24 rounded bg-slate-300/70" />
+                        <Skeleton class="h-3 w-16 rounded bg-slate-200" />
+                        <Skeleton class="mt-2 h-6 w-24 rounded bg-slate-300/70" />
                       </div>
                     </div>
                   </div>
@@ -374,58 +363,54 @@ function App() {
                   <div class="flex min-h-[inherit] items-center justify-center rounded-xl border border-dashed border-slate-300/80 bg-white/40">
                     <p class="m-0 text-lg font-semibold tracking-wide text-slate-500/90">Coming Soon</p>
                   </div>
-                ) : section.id === 'weekly-budget' && summary() ? (
+                ) : section.id === 'weekly-budget' && currentSummary() ? (
                   <>
                     <div class="flex items-center justify-between">
                       <p class="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">{section.title}</p>
                       <div class="flex items-center gap-1.5">
-                        <button
-                          type="button"
+                        <Button
                           class={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
                             canGoPrev()
                               ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                               : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
                           }`}
                           disabled={!canGoPrev()}
-                          onClick={() => moveWeek(-1)}
+                          onClick={() => moveKnownWeek(-1)}
                         >
                           이전 주
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
                           class={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition ${
                             canGoNext()
                               ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                               : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
                           }`}
                           disabled={!canGoNext()}
-                          onClick={() => moveWeek(1)}
+                          onClick={() => moveKnownWeek(1)}
                         >
                           다음 주
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
                           class="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50"
-                          onClick={() => setViewWeekKey(null)}
+                          onClick={() => void loadCurrentWeek()}
                         >
                           이번 주
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
                           class="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50"
-                          onClick={() => refetch()}
+                          onClick={() => void loadCurrentWeek()}
                         >
                           새로고침
-                        </button>
+                        </Button>
                         <span class="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                          {summary.loading ? '조회중...' : weekTabLabel()}
+                          {loading() ? '조회중...' : weekTabLabel()}
                         </span>
                       </div>
                     </div>
                     <div class="mt-4 rounded-xl border border-slate-200 bg-white/90 p-4">
                       <p class="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">남은 예산</p>
                       <p class="mt-2 mb-0 text-4xl leading-none font-bold tracking-tight tabular-nums text-slate-900">
-                        {krwFormatter.format(summary()!.remaining)}
+                        {krwFormatter.format(currentSummary()!.remaining)}
                       </p>
                       <div class="mt-4">
                         <div class="mb-2 flex items-center justify-between text-xs text-slate-500">
@@ -434,7 +419,7 @@ function App() {
                         </div>
                         <div class="h-2 overflow-hidden rounded-full bg-slate-200">
                           <div
-                            class={`h-full rounded-full ${summary()!.alert ? 'bg-rose-500' : 'bg-slate-700'}`}
+                            class={`h-full rounded-full ${currentSummary()!.alert ? 'bg-rose-500' : 'bg-slate-700'}`}
                             style={{ width: `${usagePercent()}%` }}
                           />
                         </div>
@@ -444,7 +429,7 @@ function App() {
                     <div class="mt-3 grid grid-cols-2 gap-2">
                       <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
                         <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">주차</p>
-                        <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">{summary()!.week_key}</p>
+                        <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">{currentSummary()!.week_key}</p>
                       </div>
                       <div
                         class={`rounded-lg border border-slate-200 bg-white/80 p-3 ${disableFutureSpendMeta() ? 'opacity-40 grayscale' : ''}`}
@@ -452,13 +437,13 @@ function App() {
                       >
                         <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">기록 수</p>
                         <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">
-                          {disableFutureSpendMeta() ? '-' : `${summary()!.record_count}건`}
+                          {disableFutureSpendMeta() ? '-' : `${currentSummary()!.record_count}건`}
                         </p>
                       </div>
                       <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
                         <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">주간 한도</p>
                         <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">
-                          {krwFormatter.format(summary()!.weekly_limit)}
+                          {krwFormatter.format(currentSummary()!.weekly_limit)}
                         </p>
                       </div>
                       <div
@@ -467,31 +452,17 @@ function App() {
                       >
                         <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">총 지출</p>
                         <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">
-                          {disableFutureSpendMeta() ? '-' : krwFormatter.format(summary()!.total_spent)}
+                          {disableFutureSpendMeta() ? '-' : krwFormatter.format(currentSummary()!.total_spent)}
                         </p>
                       </div>
                     </div>
 
                     <div class="mt-3 inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium">
-                      알림: {summary()!.alert ? 'ON' : 'OFF'}
+                      알림: {currentSummary()!.alert ? 'ON' : 'OFF'}
                     </div>
                     <p class="mt-2 mb-0 text-[11px] text-slate-400">카드를 좌우로 스와이프해서 주차 전환</p>
                   </>
-                ) : (
-                  <>
-                    <p class="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">{section.title}</p>
-                    <div class="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white/80">
-                      {section.rows.map((row) => (
-                        <div class="flex items-center justify-between px-3 py-3">
-                          <span class="text-xs font-medium uppercase tracking-wide text-slate-500">{row.label}</span>
-                          <span class="text-2xl font-bold leading-none tracking-tight tabular-nums text-slate-900">
-                            {row.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
+                ) : null}
               </article>
             ))}
           </section>
