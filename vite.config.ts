@@ -5,6 +5,9 @@ import solid from 'vite-plugin-solid'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    port: 3001,
+  },
   plugins: [
     tailwindcss(),
     solid(),
