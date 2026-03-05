@@ -40,17 +40,10 @@ const sizeClassByKey = {
 } as const
 
 const toneClassByKey = {
-  sky: 'bg-gradient-to-b from-white to-sky-50',
-  mint: 'bg-gradient-to-b from-white to-emerald-50',
-  slate: 'bg-gradient-to-b from-white to-slate-50',
-  rose: 'bg-gradient-to-b from-white to-rose-50',
-} as const
-
-const tabClassByTone = {
-  sky: 'bg-sky-200/80 border-sky-300',
-  mint: 'bg-emerald-200/80 border-emerald-300',
-  slate: 'bg-slate-200/80 border-slate-300',
-  rose: 'bg-rose-200/80 border-rose-300',
+  sky: 'bg-slate-50/95',
+  mint: 'bg-zinc-50/95',
+  slate: 'bg-white/95',
+  rose: 'bg-neutral-100/95',
 } as const
 
 const krwFormatter = new Intl.NumberFormat('ko-KR', {
@@ -157,15 +150,19 @@ function App() {
 
   const hasError = createMemo(() => Boolean(summary.error))
   const errorMessage = createMemo(() => summary.error?.message ?? '알 수 없는 오류')
+  const usagePercent = createMemo(() => {
+    const value = summary()?.usage_rate ?? 0
+    return Math.max(0, Math.min(100, value * 100))
+  })
 
   return (
-    <div class="flex min-h-screen flex-col bg-[radial-gradient(circle_at_12%_12%,rgba(137,199,255,0.35),transparent_35%),radial-gradient(circle_at_85%_90%,rgba(143,230,184,0.25),transparent_40%),linear-gradient(180deg,#ecf3ff,#eefbf3)] text-slate-900">
+    <div class="flex min-h-screen flex-col bg-[radial-gradient(circle_at_15%_10%,rgba(255,255,255,0.6),transparent_30%),linear-gradient(180deg,#f5f5f5_0%,#e7e7e7_100%)] text-slate-900">
       <main class="flex flex-1 items-center justify-center p-6 max-[820px]:p-4">
         <section aria-label="Dashboard" class="w-full max-w-[920px]">
           <div class="mb-3 flex items-center justify-end">
             <button
               type="button"
-              class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              class="rounded-lg border border-slate-400/60 bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-white"
               onClick={() => refetch()}
             >
               Refresh
@@ -182,20 +179,65 @@ function App() {
             {sections().map((section) => (
               <article
                 id={section.id}
-                class={`relative mb-4 break-inside-avoid rounded-2xl border border-slate-200 p-4 pt-6 shadow-[0_10px_30px_rgba(29,41,57,0.10)] ${sizeClassByKey[section.size]} ${toneClassByKey[section.tone]}`}
+                class={`mb-4 break-inside-avoid rounded-2xl border border-slate-300/70 p-5 shadow-[0_12px_28px_rgba(15,23,42,0.08)] ${sizeClassByKey[section.size]} ${toneClassByKey[section.tone]}`}
               >
-                <div
-                  aria-hidden="true"
-                  class={`absolute left-4 top-0 h-3 w-24 -translate-y-1/2 rounded-t-xl border ${tabClassByTone[section.tone]}`}
-                />
                 {section.isDummy ? (
-                  <div class="flex min-h-[inherit] items-center justify-center">
-                    <p class="m-0 text-lg font-semibold tracking-wide text-slate-500">Coming Soon</p>
+                  <div class="flex min-h-[inherit] items-center justify-center rounded-xl border border-dashed border-slate-300/80 bg-white/40">
+                    <p class="m-0 text-lg font-semibold tracking-wide text-slate-500/90">Coming Soon</p>
                   </div>
+                ) : section.id === 'weekly-budget' && summary() ? (
+                  <>
+                    <p class="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">{section.title}</p>
+                    <div class="mt-4 rounded-xl border border-slate-200 bg-white/90 p-4">
+                      <p class="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">남은 예산</p>
+                      <p class="mt-2 mb-0 text-4xl leading-none font-bold tracking-tight tabular-nums text-slate-900">
+                        {krwFormatter.format(summary()!.remaining)}
+                      </p>
+                      <div class="mt-4">
+                        <div class="mb-2 flex items-center justify-between text-xs text-slate-500">
+                          <span>사용률</span>
+                          <span class="tabular-nums">{usagePercent().toFixed(1)}%</span>
+                        </div>
+                        <div class="h-2 overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            class={`h-full rounded-full ${summary()!.alert ? 'bg-rose-500' : 'bg-slate-700'}`}
+                            style={{ width: `${usagePercent()}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-2 gap-2">
+                      <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
+                        <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">주차</p>
+                        <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">{summary()!.week_key}</p>
+                      </div>
+                      <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
+                        <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">기록 수</p>
+                        <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">{summary()!.record_count}건</p>
+                      </div>
+                      <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
+                        <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">주간 한도</p>
+                        <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">
+                          {krwFormatter.format(summary()!.weekly_limit)}
+                        </p>
+                      </div>
+                      <div class="rounded-lg border border-slate-200 bg-white/80 p-3">
+                        <p class="m-0 text-[11px] uppercase tracking-[0.08em] text-slate-500">총 지출</p>
+                        <p class="mt-1 mb-0 text-lg font-semibold tabular-nums">
+                          {krwFormatter.format(summary()!.total_spent)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="mt-3 inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium">
+                      알림: {summary()!.alert ? 'ON' : 'OFF'}
+                    </div>
+                  </>
                 ) : (
                   <>
-                    <p class="m-0 text-xs uppercase tracking-[0.04em] text-slate-500">{section.title}</p>
-                    <div class="mt-4 divide-y divide-slate-200/80 rounded-xl border border-slate-200/80 bg-white/60">
+                    <p class="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">{section.title}</p>
+                    <div class="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white/80">
                       {section.rows.map((row) => (
                         <div class="flex items-center justify-between px-3 py-3">
                           <span class="text-xs font-medium uppercase tracking-wide text-slate-500">{row.label}</span>
