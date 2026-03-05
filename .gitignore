@@ -23,3 +23,6 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+
+# Deployment templates (keep local only)
+deploy/nginx/

@@ -1,0 +1,63 @@
+name: Deploy Dashboard to AWS (Nginx)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: deploy on aws
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate required deployment variables
+        run: |
+          test -n "${{ vars.DEPLOY_PATH }}" || (echo "Missing variable: DEPLOY_PATH" && exit 1)
+          test -n "${{ vars.VITE_CMS_API_BASE_URL }}" || (echo "Missing variable: VITE_CMS_API_BASE_URL" && exit 1)
+
+      - name: Build
+        run: bun run build
+        env:
+          VITE_CMS_API_BASE_URL: ${{ vars.VITE_CMS_API_BASE_URL }}
+
+      - name: Upload build via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER_NAME }}
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
+          source: "dist"
+          target: "${{ vars.DEPLOY_PATH }}/releases/${{ github.sha }}"
+          strip_components: 0
+          debug: true
+          rm: true
+
+      - name: Switch release and reload Nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER_NAME }}
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
+          script: |
+            set -e
+            DEPLOY_PATH="${{ vars.DEPLOY_PATH }}"
+            RELEASE_SHA="${{ github.sha }}"
+
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
+            ln -sfn "releases/${RELEASE_SHA}/dist" current
+
+            sudo nginx -t
+            sudo systemctl reload nginx
