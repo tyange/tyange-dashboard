@@ -22,6 +22,18 @@ export type SectionRow = {
   value: string
 }
 
+export type ConsumptionRecord = {
+  id: string
+  amount: number
+  place: string
+  created_at: string
+}
+
+export type ConsumptionRecordsResponse = {
+  records: ConsumptionRecord[]
+  total_count: number
+}
+
 export type FolderSection = {
   id: string
   title: string
