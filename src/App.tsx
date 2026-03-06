@@ -1,4 +1,5 @@
-import { createMemo, createSignal, onMount } from 'solid-js'
+import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
+import { getYear } from 'date-fns'
 import PWABadge from './PWABadge'
 import {
   fetchBudgetWeeks,
@@ -20,13 +21,14 @@ const emptySummary: WeeklySummary = {
 }
 
 function App() {
+  const currentYear = getYear(new Date())
   const [summaryByWeek, setSummaryByWeek] = createSignal<Record<string, WeeklySummary>>({})
   const [knownWeekKeys, setKnownWeekKeys] = createSignal<string[]>([])
   const [currentWeekKey, setCurrentWeekKey] = createSignal<string | null>(null)
   const [anchorWeekKey, setAnchorWeekKey] = createSignal<string | null>(null)
-  const [touchStartX, setTouchStartX] = createSignal<number | null>(null)
   const [loading, setLoading] = createSignal(true)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
+  const [isScrolled, setIsScrolled] = createSignal(false)
 
   const buildKnownWeekKeys = (weeks: string[], currentKey?: string) => {
     const unique = new Set(weeks)
@@ -55,7 +57,17 @@ function App() {
   }
 
   onMount(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10)
+    }
+    window.addEventListener('scroll', handleScroll)
+    handleScroll()
+
     void refreshCurrentWeek()
+
+    onCleanup(() => {
+      window.removeEventListener('scroll', handleScroll)
+    })
   })
 
   const currentSummary = createMemo(() => {
@@ -116,23 +128,9 @@ function App() {
     return compareWeekKey(data.week_key, anchor) > 0 && data.total_spent === 0 && data.record_count === 0
   })
 
-  const handleWeeklyTouchStart = (event: TouchEvent) => {
-    setTouchStartX(event.touches[0]?.clientX ?? null)
-  }
-
-  const handleWeeklyTouchEnd = (event: TouchEvent) => {
-    const startX = touchStartX()
-    const endX = event.changedTouches[0]?.clientX
-    if (startX == null || endX == null) return
-    const diff = endX - startX
-    if (diff <= -40 && canGoNext()) moveKnownWeek(1)
-    if (diff >= 40 && canGoPrev()) moveKnownWeek(-1)
-    setTouchStartX(null)
-  }
-
   return (
-    <div class="min-h-screen bg-background text-foreground">
-      <main class="mx-auto max-w-2xl p-4 md:p-8">
+    <div class="flex min-h-screen flex-col bg-background text-foreground">
+      <main class="mx-auto w-full max-w-2xl flex-1 p-4 pt-24 md:p-8 md:pt-28">
         <section aria-label="Dashboard">
           {errorMessage() && (
             <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -152,11 +150,42 @@ function App() {
             weekTabLabel={weekTabLabel()}
             usagePercent={usagePercent()}
             disableFutureSpendMeta={disableFutureSpendMeta()}
-            onTouchStart={handleWeeklyTouchStart}
-            onTouchEnd={handleWeeklyTouchEnd}
           />
         </section>
       </main>
+
+      <footer class="mx-auto w-full max-w-2xl px-4 pb-6 text-center text-sm text-muted-foreground md:px-8">
+        <span>Copyright &copy; {currentYear} </span>
+        <a
+          href="https://github.com/tyange"
+          target="_blank"
+          rel="noreferrer"
+          class="transition-colors hover:text-foreground"
+        >
+          tyange
+        </a>
+      </footer>
+
+      <nav
+        aria-label="Floating navigation"
+        class={`fixed left-1/2 top-[calc(env(safe-area-inset-top)+1rem)] z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2 py-2 backdrop-blur-xl transition-all duration-300 ease-out ${
+          isScrolled() ? 'bg-black/80 shadow-lg shadow-black/30' : ''
+        }`}
+      >
+        <a
+          href="#weekly-budget"
+          aria-current="page"
+          class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-black transition-all duration-200"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="h-4 w-4">
+            <path
+              d="M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span>주간 예산</span>
+        </a>
+      </nav>
 
       <PWABadge />
     </div>

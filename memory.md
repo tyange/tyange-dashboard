@@ -29,7 +29,8 @@ Last updated: 2026-03-06 (Asia/Seoul)
 ## Behavior Conventions In Use
 - Keep API fetch logic in `src/features/budget/api.ts`
 - Cache loaded weekly summaries in-memory by `week_key`
-- Week navigation supports both button click and horizontal swipe
+- Week navigation is controlled via toolbar buttons (prev/next and current week refresh)
+- Top floating navigation bar uses centered pill style (blur + translucent background + scroll shadow); current nav has one active item (`주간 예산`)
 - API errors are surfaced in UI as a top error alert block
 
 ## Data Contracts (Budget)
@@ -46,4 +47,3 @@ Last updated: 2026-03-06 (Asia/Seoul)
 - If conventions changed, update this file
 - If scripts/paths changed, update "Core Commands" and "Feature Structure"
 - If new env vars were introduced, document them under "Environment Notes"
-

@@ -1,4 +1,3 @@
-import type { JSX } from 'solid-js'
 import { krwFormatter } from '../format'
 import type { WeeklySummary } from '../types'
 
@@ -14,19 +13,15 @@ export type WeeklyBudgetCardProps = {
   weekTabLabel: string
   usagePercent: number
   disableFutureSpendMeta: boolean
-  onTouchStart: JSX.EventHandlerUnion<HTMLElement, TouchEvent>
-  onTouchEnd: JSX.EventHandlerUnion<HTMLElement, TouchEvent>
 }
 
 export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
-  const isAlertOn = () => props.summary.alert && !props.disableFutureSpendMeta
-
   const metaCard = 'rounded-xl border border-border bg-card p-5 shadow-[0_10px_24px_rgba(2,6,23,0.22)]'
   const toolbarButton =
     'h-9 min-w-9 rounded-lg border border-border bg-secondary px-3 text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45'
 
   return (
-    <article id="weekly-budget" onTouchStart={props.onTouchStart} onTouchEnd={props.onTouchEnd}>
+    <article id="weekly-budget">
       <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="m-0 text-2xl font-semibold tracking-tight text-foreground">{props.title}</h1>
@@ -101,32 +96,6 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
           </p>
         </div>
       </section>
-
-      <section class={metaCard}>
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="font-medium text-foreground">알림</p>
-            <p class="text-sm text-muted-foreground">
-              {isAlertOn() ? '알림이 활성화되었습니다' : '알림이 비활성화되었습니다'}
-            </p>
-          </div>
-          <div
-            class={`relative h-6 w-11 rounded-full border border-border transition ${
-              isAlertOn() ? 'bg-primary/30' : 'bg-muted'
-            }`}
-            role="switch"
-            aria-checked={isAlertOn()}
-            aria-label="알림 상태"
-          >
-            <span
-              class={`absolute top-0.5 h-4.5 w-4.5 rounded-full bg-foreground transition ${
-                isAlertOn() ? 'left-[1.3rem]' : 'left-0.5'
-              }`}
-            />
-          </div>
-        </div>
-      </section>
-      <p class="mt-6 text-center text-sm text-muted-foreground">카드를 좌우로 스와이프해서 주차 전환</p>
     </article>
   )
 }
