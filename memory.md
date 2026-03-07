@@ -21,21 +21,28 @@ Last updated: 2026-03-07 (Asia/Seoul)
 
 ## Current Feature Structure
 - Entry: `src/index.tsx`
-- Main page/state orchestration: `src/App.tsx`
+- Main router entry: `src/App.tsx`
+- Auth state/context: `src/auth/AuthProvider.tsx`
+- Public pages: `src/pages/*`
+- Authenticated layout: `src/components/AuthenticatedLayout.tsx`
 - Budget domain: `src/features/budget/*`
 - Main API layer: `src/features/budget/api.ts`
-- Spend records page UI: `src/features/budget/components/SpendRecordsPage.tsx`
+- Budget dashboard route UI: `src/features/budget/components/BudgetDashboardPage.tsx`
+- Spend records route UI: `src/features/budget/components/SpendRecordsRoutePage.tsx`
 - Week key parsing/comparison: `src/features/budget/weekKey.ts`
 
 ## Behavior Conventions In Use
 - Keep API fetch logic in `src/features/budget/api.ts`
 - Cache loaded weekly summaries in-memory by `week_key`
-- Cache loaded weekly spend records in-memory by `week_key`
 - Week navigation is controlled via toolbar buttons (prev/next and current week refresh)
-- Top floating navigation bar uses centered pill style (blur + translucent background + scroll shadow); current nav has one active item (`주간 예산`)
+- Public landing page lives at `/` and only introduces the app plus login guidance
+- Login page lives at `/login`; this phase uses an in-memory placeholder auth flow without backend integration
+- Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
+- Auth state uses `unknown | guest | authenticated` and does not persist across refreshes in this phase
+- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and only exposes the budget dashboard entry
 - API errors are surfaced in UI as a top error alert block
-- `기록 수` 카드의 `더 보기` 버튼 클릭 시 소비 기록 전용 페이지로 이동
-- 소비 기록 페이지는 `GET /budget/spending?week={week_key}`로 조회
+- `기록 수` 카드의 `더 보기` 버튼 is the primary UI entry into `/records?week={week_key}`
+- 소비 기록 페이지는 `week` query param을 공식 입력으로 받고 `GET /budget/spending?week={week_key}`로 조회
 
 ## Data Contracts (Budget)
 - `WeeklySummary`: `week_key`, `weekly_limit`, `total_spent`, `remaining`, `usage_rate`, `alert`, `record_count`

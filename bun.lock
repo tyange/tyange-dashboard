@@ -6,6 +6,7 @@
       "name": "tyange-dashboard",
       "dependencies": {
         "@kobalte/core": "^0.13.11",
+        "@solidjs/router": "^0.15.4",
         "date-fns": "^4.1.0",
         "solid-js": "^1.9.9",
       },
@@ -418,6 +419,8 @@
     "@solid-primitives/trigger": ["@solid-primitives/trigger@1.2.3", "", { "dependencies": { "@solid-primitives/utils": "^6.4.0" }, "peerDependencies": { "solid-js": "^1.6.12" } }, "sha512-Za2JebEiDyfamjmDwRaESYqBBYOlgYGzB8kHYH0QrkXyLf2qNADlKdGN+z3vWSLCTDcKxChS43Kssjuc0OZhng=="],
 
     "@solid-primitives/utils": ["@solid-primitives/utils@6.4.0", "", { "peerDependencies": { "solid-js": "^1.6.12" } }, "sha512-AeGTBg8Wtkh/0s+evyLtP8piQoS4wyqqQaAFs2HJcFMMjYAtUgo+ZPduRXLjPlqKVc2ejeR544oeqpbn8Egn8A=="],
+
+    "@solidjs/router": ["@solidjs/router@0.15.4", "", { "peerDependencies": { "solid-js": "^1.8.6" } }, "sha512-WOpgg9a9T638cR+5FGbFi/IV4l2FpmBs1GpIMSPa0Ce9vyJN7Wts+X2PqMf9IYn0zUj2MlSJtm1gp7/HI/n5TQ=="],
 
     "@surma/rollup-plugin-off-main-thread": ["@surma/rollup-plugin-off-main-thread@2.2.3", "", { "dependencies": { "ejs": "^3.1.6", "json5": "^2.2.0", "magic-string": "^0.25.0", "string.prototype.matchall": "^4.0.6" } }, "sha512-lR8q/9W7hZpMWweNiAKU7NQerBnzQQLvi8qnTDU/fxItPhtZVMbPV3lbCwjhIlNBe9Bbr5V+KHshvWmVSG9cxQ=="],
 

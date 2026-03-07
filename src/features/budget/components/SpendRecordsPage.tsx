@@ -12,6 +12,8 @@ export type SpendRecordsPageProps = {
 
 export default function SpendRecordsPage(props: SpendRecordsPageProps) {
   const card = 'rounded-xl border border-border bg-card p-5 shadow-[0_10px_24px_rgba(2,6,23,0.22)]'
+  const backButton =
+    'inline-flex items-center rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted'
 
   const formatRecordDate = (value: string) => {
     const date = new Date(value)
@@ -23,7 +25,13 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
     <article aria-label="소비 기록 페이지">
       <section class={card}>
         <div class="mb-4 flex items-center justify-between">
-          <p class="text-sm text-muted-foreground">총 {props.records.length}건</p>
+          <div>
+            <p class="text-sm font-medium text-foreground">{props.weekKey}</p>
+            <p class="mt-1 text-sm text-muted-foreground">총 {props.records.length}건</p>
+          </div>
+          <button type="button" class={backButton} onClick={props.onBack}>
+            대시보드로
+          </button>
         </div>
 
         <Show when={!props.loading} fallback={<p class="text-sm text-muted-foreground">소비 기록을 불러오는 중...</p>}>
