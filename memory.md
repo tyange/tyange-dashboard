@@ -55,6 +55,13 @@ Last updated: 2026-03-07 (Asia/Seoul)
 - Keep week-key handling centralized in `weekKey.ts` to avoid duplicated date logic
 - When adding API calls, keep consistent error pattern: `API ${status}: ${bodyText || fallbackMessage}`
 
+## Outstanding TODOs
+- Replace the placeholder in-memory auth flow in `src/auth/AuthProvider.tsx` with real backend authentication
+- Define the real login contract for `/login` (API endpoint, validation, error states, and success handling)
+- Add auth persistence across refreshes (token or session restoration) instead of resetting to `guest`
+- Attach authenticated request handling to budget API calls when backend auth is ready
+- Revisit `/records` direct-access behavior once real auth/session rules are finalized
+
 ## Update Checklist (When Task Ends)
 - If conventions changed, update this file
 - If scripts/paths changed, update "Core Commands" and "Feature Structure"
