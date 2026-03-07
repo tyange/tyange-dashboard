@@ -1,5 +1,7 @@
+import { createSignal } from 'solid-js'
 import { krwFormatter } from '../format'
 import type { WeeklySummary } from '../types'
+import RecordListModal from './RecordListModal'
 
 export type WeeklyBudgetCardProps = {
   title: string
@@ -16,6 +18,8 @@ export type WeeklyBudgetCardProps = {
 }
 
 export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
+  const [isRecordModalOpen, setIsRecordModalOpen] = createSignal(false)
+
   const metaCard = 'rounded-xl border border-border bg-card p-5 shadow-[0_10px_24px_rgba(2,6,23,0.22)]'
   const toolbarButton =
     'h-9 min-w-9 rounded-lg border border-border bg-secondary px-3 text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45'
@@ -78,7 +82,18 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
           <p class="mt-1 text-xl font-semibold text-foreground tabular-nums">{props.summary.week_key}</p>
         </div>
         <div class={`${metaCard} ${props.disableFutureSpendMeta ? 'opacity-40 grayscale' : ''}`} aria-disabled={props.disableFutureSpendMeta}>
-          <p class="text-sm text-muted-foreground">기록 수</p>
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-muted-foreground">기록 수</p>
+            {!props.disableFutureSpendMeta && props.summary.record_count > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsRecordModalOpen(true)}
+                class="text-sm font-medium text-primary transition hover:text-primary/80"
+              >
+                더 보기
+              </button>
+            )}
+          </div>
           <p class="mt-1 text-xl font-semibold text-foreground tabular-nums">
             {props.disableFutureSpendMeta ? '-' : `${props.summary.record_count}건`}
           </p>
@@ -96,6 +111,12 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
           </p>
         </div>
       </section>
+
+      <RecordListModal
+        weekKey={props.summary.week_key}
+        isOpen={isRecordModalOpen()}
+        onClose={() => setIsRecordModalOpen(false)}
+      />
     </article>
   )
 }

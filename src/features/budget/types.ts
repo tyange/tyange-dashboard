@@ -17,6 +17,13 @@ export type BudgetWeeksResponse = {
   max_week?: string | null
 }
 
+export type SpendRecord = {
+  id: number
+  amount: number
+  description: string
+  spent_at: string
+}
+
 export type SectionRow = {
   label: string
   value: string
