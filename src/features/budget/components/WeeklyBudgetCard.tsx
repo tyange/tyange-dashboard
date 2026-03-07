@@ -13,12 +13,15 @@ export type WeeklyBudgetCardProps = {
   weekTabLabel: string
   usagePercent: number
   disableFutureSpendMeta: boolean
+  onOpenRecordsPage: () => void
 }
 
 export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
   const metaCard = 'rounded-xl border border-border bg-card p-5 shadow-[0_10px_24px_rgba(2,6,23,0.22)]'
   const toolbarButton =
     'h-9 min-w-9 rounded-lg border border-border bg-secondary px-3 text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45'
+  const viewMoreButton =
+    'group inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold tracking-[0.01em] text-primary transition-all hover:border-primary/35 hover:bg-primary/16 hover:text-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-secondary disabled:text-muted-foreground disabled:opacity-45'
 
   return (
     <article id="weekly-budget">
@@ -78,7 +81,31 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
           <p class="mt-1 text-xl font-semibold text-foreground tabular-nums">{props.summary.week_key}</p>
         </div>
         <div class={`${metaCard} ${props.disableFutureSpendMeta ? 'opacity-40 grayscale' : ''}`} aria-disabled={props.disableFutureSpendMeta}>
-          <p class="text-sm text-muted-foreground">기록 수</p>
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-sm text-muted-foreground">기록 수</p>
+            <button
+              type="button"
+              class={viewMoreButton}
+              onClick={props.onOpenRecordsPage}
+              disabled={props.disableFutureSpendMeta}
+            >
+              <span>더 보기</span>
+              <svg
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+                class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
+              >
+                <path
+                  d="M5.25 3.75 9.5 8l-4.25 4.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                />
+              </svg>
+            </button>
+          </div>
           <p class="mt-1 text-xl font-semibold text-foreground tabular-nums">
             {props.disableFutureSpendMeta ? '-' : `${props.summary.record_count}건`}
           </p>

@@ -11,10 +11,23 @@ export type WeeklySummary = {
   record_count: number
 }
 
+export type WeeklySpendRecord = {
+  record_id: number
+  amount: number
+  merchant: string | null
+  transacted_at: string
+  created_at: string
+}
+
 export type BudgetWeeksResponse = {
   weeks: string[]
   min_week?: string | null
   max_week?: string | null
+}
+
+export type SpendingListResponse = {
+  week_key: string
+  records: WeeklySpendRecord[]
 }
 
 export type SectionRow = {

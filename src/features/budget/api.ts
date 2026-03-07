@@ -1,4 +1,4 @@
-import type { BudgetWeeksResponse, WeeklySummary } from './types'
+import type { BudgetWeeksResponse, SpendingListResponse, WeeklySpendRecord, WeeklySummary } from './types'
 
 const apiBaseUrl = (import.meta.env.VITE_CMS_API_BASE_URL ?? 'http://localhost:8080').replace(
   /\/$/,
@@ -42,4 +42,18 @@ export async function fetchBudgetWeeks(): Promise<BudgetWeeksResponse> {
   }
 
   return response.json()
+}
+
+export async function fetchWeeklySpendRecords(weekKey: string): Promise<WeeklySpendRecord[]> {
+  const response = await fetch(`${apiBaseUrl}/budget/spending?week=${encodeURIComponent(weekKey)}`, {
+    headers: { Accept: 'application/json' },
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '주간 소비 기록 조회 실패'}`)
+  }
+
+  const payload = (await response.json()) as SpendingListResponse
+  return payload.records ?? []
 }
