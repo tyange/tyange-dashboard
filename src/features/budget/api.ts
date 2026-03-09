@@ -1,13 +1,21 @@
 import type { BudgetWeeksResponse, SpendingListResponse, WeeklySpendRecord, WeeklySummary } from './types'
+import { createAuthorizedHeaders, getApiBaseUrl, loadStoredSession } from '../../auth/api'
 
-const apiBaseUrl = (import.meta.env.VITE_CMS_API_BASE_URL ?? 'http://localhost:8080').replace(
-  /\/$/,
-  '',
-)
+const apiBaseUrl = getApiBaseUrl()
+
+function getRequiredAccessToken() {
+  const session = loadStoredSession()
+
+  if (!session?.access_token) {
+    throw new Error('로그인이 필요합니다.')
+  }
+
+  return session.access_token
+}
 
 export async function fetchWeeklySummary(): Promise<WeeklySummary> {
   const response = await fetch(`${apiBaseUrl}/budget/weekly`, {
-    headers: { Accept: 'application/json' },
+    headers: createAuthorizedHeaders(getRequiredAccessToken()),
   })
 
   if (!response.ok) {
@@ -20,7 +28,7 @@ export async function fetchWeeklySummary(): Promise<WeeklySummary> {
 
 export async function fetchWeeklySummaryByWeekKey(weekKey: string): Promise<WeeklySummary> {
   const response = await fetch(`${apiBaseUrl}/budget/weekly/${weekKey}`, {
-    headers: { Accept: 'application/json' },
+    headers: createAuthorizedHeaders(getRequiredAccessToken()),
   })
 
   if (!response.ok) {
@@ -33,7 +41,7 @@ export async function fetchWeeklySummaryByWeekKey(weekKey: string): Promise<Week
 
 export async function fetchBudgetWeeks(): Promise<BudgetWeeksResponse> {
   const response = await fetch(`${apiBaseUrl}/budget/weeks`, {
-    headers: { Accept: 'application/json' },
+    headers: createAuthorizedHeaders(getRequiredAccessToken()),
   })
 
   if (!response.ok) {
@@ -46,7 +54,7 @@ export async function fetchBudgetWeeks(): Promise<BudgetWeeksResponse> {
 
 export async function fetchWeeklySpendRecords(weekKey: string): Promise<WeeklySpendRecord[]> {
   const response = await fetch(`${apiBaseUrl}/budget/spending?week=${encodeURIComponent(weekKey)}`, {
-    headers: { Accept: 'application/json' },
+    headers: createAuthorizedHeaders(getRequiredAccessToken()),
   })
 
   if (!response.ok) {

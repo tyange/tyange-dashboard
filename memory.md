@@ -1,6 +1,6 @@
 # Tyange Dashboard Memory
 
-Last updated: 2026-03-07 (Asia/Seoul)
+Last updated: 2026-03-09 (Asia/Seoul)
 
 ## Project Snapshot
 - Frontend: SolidJS + TypeScript + Vite
@@ -36,13 +36,14 @@ Last updated: 2026-03-07 (Asia/Seoul)
 - Cache loaded weekly summaries in-memory by `week_key`
 - Week navigation is controlled via toolbar buttons (prev/next and current week refresh)
 - Public landing page lives at `/` and only introduces the app plus login guidance
-- Login page lives at `/login`; this phase uses an in-memory placeholder auth flow without backend integration
+- Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
 - Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
-- Auth state uses `unknown | guest | authenticated` and does not persist across refreshes in this phase
+- Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
 - Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and only exposes the budget dashboard entry
 - API errors are surfaced in UI as a top error alert block
 - `기록 수` 카드의 `더 보기` 버튼 is the primary UI entry into `/records?week={week_key}`
 - 소비 기록 페이지는 `week` query param을 공식 입력으로 받고 `GET /budget/spending?week={week_key}`로 조회
+- Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
 
 ## Data Contracts (Budget)
 - `WeeklySummary`: `week_key`, `weekly_limit`, `total_spent`, `remaining`, `usage_rate`, `alert`, `record_count`
@@ -56,11 +57,8 @@ Last updated: 2026-03-07 (Asia/Seoul)
 - When adding API calls, keep consistent error pattern: `API ${status}: ${bodyText || fallbackMessage}`
 
 ## Outstanding TODOs
-- Replace the placeholder in-memory auth flow in `src/auth/AuthProvider.tsx` with real backend authentication
-- Define the real login contract for `/login` (API endpoint, validation, error states, and success handling)
-- Add auth persistence across refreshes (token or session restoration) instead of resetting to `guest`
-- Attach authenticated request handling to budget API calls when backend auth is ready
-- Revisit `/records` direct-access behavior once real auth/session rules are finalized
+- Revisit refresh-token handling when access token expiry UX becomes relevant
+- Revisit `/records` direct-access behavior once expired-session recovery UX is defined
 
 ## Update Checklist (When Task Ends)
 - If conventions changed, update this file

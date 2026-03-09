@@ -1,20 +1,38 @@
 import { A, Navigate, useNavigate, useSearchParams } from '@solidjs/router'
-import { Show } from 'solid-js'
+import { Show, createSignal } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
 
 export default function LoginPage() {
   const auth = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams<{ next?: string }>()
+  const [userId, setUserId] = createSignal('')
+  const [password, setPassword] = createSignal('')
+  const [isSubmitting, setIsSubmitting] = createSignal(false)
+  const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
 
   const nextPath = () => {
     const requested = searchParams.next
     return requested && requested.startsWith('/') ? requested : '/dashboard'
   }
 
-  const completeLogin = () => {
-    auth.login(nextPath())
-    void navigate(nextPath(), { replace: true })
+  const completeLogin = async () => {
+    if (isSubmitting()) {
+      return
+    }
+
+    setIsSubmitting(true)
+    setErrorMessage(null)
+
+    try {
+      await auth.login(userId().trim(), password())
+      void navigate(nextPath(), { replace: true })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '로그인 실패'
+      setErrorMessage(message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -27,16 +45,18 @@ export default function LoginPage() {
 
             <form
               class="mt-8 space-y-4"
-              onSubmit={(event) => {
+              onSubmit={async (event) => {
                 event.preventDefault()
-                completeLogin()
+                await completeLogin()
               }}
             >
               <label class="block">
-                <span class="mb-2 block text-sm font-medium text-foreground">이메일</span>
+                <span class="mb-2 block text-sm font-medium text-foreground">아이디</span>
                 <input
-                  type="email"
-                  placeholder="name@example.com"
+                  type="text"
+                  value={userId()}
+                  onInput={(event) => setUserId(event.currentTarget.value)}
+                  placeholder="user_id"
                   class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
                 />
               </label>
@@ -44,19 +64,29 @@ export default function LoginPage() {
                 <span class="mb-2 block text-sm font-medium text-foreground">비밀번호</span>
                 <input
                   type="password"
+                  value={password()}
+                  onInput={(event) => setPassword(event.currentTarget.value)}
                   placeholder="••••••••"
                   class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
                 />
               </label>
+              <Show when={errorMessage()}>
+                {(message) => (
+                  <div class="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                    {message()}
+                  </div>
+                )}
+              </Show>
               <div class="mt-8 flex items-center justify-between gap-4">
                 <A href="/" class="text-sm font-medium text-accent transition-colors hover:text-foreground">
                   메인으로
                 </A>
                 <button
                   type="submit"
+                  disabled={isSubmitting()}
                   class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
                 >
-                  로그인하기
+                  {isSubmitting() ? '로그인 중...' : '로그인하기'}
                 </button>
               </div>
             </form>
