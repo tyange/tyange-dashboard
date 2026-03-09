@@ -37,6 +37,7 @@ Last updated: 2026-03-09 (Asia/Seoul)
 - Week navigation is controlled via toolbar buttons (prev/next and current week refresh)
 - Public landing page lives at `/` and only introduces the app plus login guidance
 - Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
+- Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
 - Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
 - Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and only exposes the budget dashboard entry

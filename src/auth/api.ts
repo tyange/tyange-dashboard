@@ -20,6 +20,12 @@ export type AuthSession = LoginResponse & {
   user_id: string
 }
 
+type SignupResponse = {
+  status: boolean
+  data: null
+  message?: string | null
+}
+
 export function getApiBaseUrl() {
   return (import.meta.env.VITE_CMS_API_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '')
 }
@@ -101,4 +107,22 @@ export async function loginRequest(payload: LoginPayload): Promise<AuthSession> 
     ...tokens,
     user_id: me.user_id,
   }
+}
+
+export async function signupRequest(email: string, password: string): Promise<SignupResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/signup`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password }),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '회원가입 실패'}`)
+  }
+
+  return response.json()
 }

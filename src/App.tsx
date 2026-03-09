@@ -9,6 +9,7 @@ import BudgetDashboardPage from './features/budget/components/BudgetDashboardPag
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
 
 function AppShell(props: ParentProps) {
   return (
@@ -34,6 +35,7 @@ function App() {
       <Router root={AppShell}>
         <Route path="/" component={LandingPage} />
         <Route path="/login" component={LoginPage} />
+        <Route path="/signup" component={SignupPage} />
         <Route
           path="/dashboard"
           component={() => (

@@ -19,12 +19,20 @@ export default function LandingPage() {
             <Show
               when={auth.isAuthenticated()}
               fallback={
-                <A
-                  href="/login?next=%2Fdashboard"
-                  class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
-                >
-                  로그인하기
-                </A>
+                <div class="flex items-center gap-3">
+                  <A
+                    href="/signup?next=%2Fdashboard"
+                    class="inline-flex items-center justify-center rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5"
+                  >
+                    회원가입
+                  </A>
+                  <A
+                    href="/login?next=%2Fdashboard"
+                    class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                  >
+                    로그인하기
+                  </A>
+                </div>
               }
             >
               <A
@@ -32,8 +40,8 @@ export default function LandingPage() {
                 class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
                 >
                   대시보드로 이동
-                </A>
-              </Show>
+              </A>
+            </Show>
           </div>
         </div>
       </section>
