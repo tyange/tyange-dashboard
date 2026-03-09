@@ -30,6 +30,19 @@ export type SpendingListResponse = {
   records: WeeklySpendRecord[]
 }
 
+export type WeeklyConfig = {
+  config_id: number
+  week_key: string
+  weekly_limit: number
+  alert_threshold: number
+}
+
+export type ApiStatusResponse = {
+  status: boolean
+  data?: null
+  message?: string | null
+}
+
 export type SectionRow = {
   label: string
   value: string

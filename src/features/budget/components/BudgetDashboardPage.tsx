@@ -5,8 +5,10 @@ import {
   fetchWeeklySummary,
   fetchWeeklySummaryByWeekKey,
 } from '../api'
+import { isBudgetNotConfiguredError } from '../errors'
 import type { WeeklySummary } from '../types'
 import { compareWeekKey, getWeekTabLabel } from '../weekKey'
+import BudgetSetupRequiredState from './BudgetSetupRequiredState'
 import WeeklyBudgetCard from './WeeklyBudgetCard'
 
 const emptySummary: WeeklySummary = {
@@ -27,6 +29,7 @@ export default function BudgetDashboardPage() {
   const [anchorWeekKey, setAnchorWeekKey] = createSignal<string | null>(null)
   const [loading, setLoading] = createSignal(true)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
+  const [requiresBudgetSetup, setRequiresBudgetSetup] = createSignal(false)
 
   const buildKnownWeekKeys = (weeks: string[], currentKey?: string) => {
     const unique = new Set(weeks)
@@ -42,12 +45,16 @@ export default function BudgetDashboardPage() {
   const refreshCurrentWeek = async () => {
     setLoading(true)
     setErrorMessage(null)
+    setRequiresBudgetSetup(false)
     try {
       const [weeksResult, data] = await Promise.all([fetchBudgetWeeks(), fetchWeeklySummary()])
       setAnchorWeekKey(data.week_key)
       setKnownWeekKeys(buildKnownWeekKeys(weeksResult.weeks ?? [], data.week_key))
       cacheWeekSummary(data)
     } catch (error) {
+      if (isBudgetNotConfiguredError(error)) {
+        setRequiresBudgetSetup(true)
+      }
       setErrorMessage((error as Error).message)
     } finally {
       setLoading(false)
@@ -87,12 +94,16 @@ export default function BudgetDashboardPage() {
 
     setLoading(true)
     setErrorMessage(null)
+    setRequiresBudgetSetup(false)
     void fetchWeeklySummaryByWeekKey(targetWeekKey)
       .then((data) => {
         setSummaryByWeek((prev) => ({ ...prev, [data.week_key]: data }))
         setCurrentWeekKey(data.week_key)
       })
       .catch((error) => {
+        if (isBudgetNotConfiguredError(error)) {
+          setRequiresBudgetSetup(true)
+        }
         setErrorMessage((error as Error).message)
       })
       .finally(() => {
@@ -128,26 +139,32 @@ export default function BudgetDashboardPage() {
 
   return (
     <section aria-label="Dashboard">
-      {errorMessage() && (
+      {requiresBudgetSetup() && (
+        <BudgetSetupRequiredState />
+      )}
+
+      {!requiresBudgetSetup() && errorMessage() && (
         <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage()}
         </div>
       )}
 
-      <WeeklyBudgetCard
-        title="주간 예산"
-        summary={currentSummary() ?? emptySummary}
-        loading={loading()}
-        canGoPrev={canGoPrev()}
-        canGoNext={canGoNext()}
-        onPrev={() => moveKnownWeek(-1)}
-        onNext={() => moveKnownWeek(1)}
-        onRefresh={() => void refreshCurrentWeek()}
-        weekTabLabel={weekTabLabel()}
-        usagePercent={usagePercent()}
-        disableFutureSpendMeta={disableFutureSpendMeta()}
-        onOpenRecordsPage={openRecordsPage}
-      />
+      {!requiresBudgetSetup() && (
+        <WeeklyBudgetCard
+          title="주간 예산"
+          summary={currentSummary() ?? emptySummary}
+          loading={loading()}
+          canGoPrev={canGoPrev()}
+          canGoNext={canGoNext()}
+          onPrev={() => moveKnownWeek(-1)}
+          onNext={() => moveKnownWeek(1)}
+          onRefresh={() => void refreshCurrentWeek()}
+          weekTabLabel={weekTabLabel()}
+          usagePercent={usagePercent()}
+          disableFutureSpendMeta={disableFutureSpendMeta()}
+          onOpenRecordsPage={openRecordsPage}
+        />
+      )}
     </section>
   )
 }

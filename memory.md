@@ -29,6 +29,7 @@ Last updated: 2026-03-09 (Asia/Seoul)
 - Main API layer: `src/features/budget/api.ts`
 - Budget dashboard route UI: `src/features/budget/components/BudgetDashboardPage.tsx`
 - Spend records route UI: `src/features/budget/components/SpendRecordsRoutePage.tsx`
+- Budget setup route UI: `src/features/budget/components/BudgetSetupPage.tsx`
 - Week key parsing/comparison: `src/features/budget/weekKey.ts`
 
 ## Behavior Conventions In Use
@@ -45,6 +46,8 @@ Last updated: 2026-03-09 (Asia/Seoul)
 - `기록 수` 카드의 `더 보기` 버튼 is the primary UI entry into `/records?week={week_key}`
 - 소비 기록 페이지는 `week` query param을 공식 입력으로 받고 `GET /budget/spending?week={week_key}`로 조회
 - Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
+- Budget dashboard and records routes treat `API 404` from budget endpoints as "예산 미등록" state and show a dedicated setup-required page instead of a generic error alert
+- Budget setup uses `GET /budget/weekly-config` to load the current week's config row and `POST /budget/set` to save current-week `weekly_limit` and `alert_threshold`
 
 ## Data Contracts (Budget)
 - `WeeklySummary`: `week_key`, `weekly_limit`, `total_spent`, `remaining`, `usage_rate`, `alert`, `record_count`

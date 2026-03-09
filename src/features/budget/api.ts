@@ -1,4 +1,11 @@
-import type { BudgetWeeksResponse, SpendingListResponse, WeeklySpendRecord, WeeklySummary } from './types'
+import type {
+  ApiStatusResponse,
+  BudgetWeeksResponse,
+  SpendingListResponse,
+  WeeklyConfig,
+  WeeklySpendRecord,
+  WeeklySummary,
+} from './types'
 import { createAuthorizedHeaders, getApiBaseUrl, loadStoredSession } from '../../auth/api'
 
 const apiBaseUrl = getApiBaseUrl()
@@ -64,4 +71,37 @@ export async function fetchWeeklySpendRecords(weekKey: string): Promise<WeeklySp
 
   const payload = (await response.json()) as SpendingListResponse
   return payload.records ?? []
+}
+
+export async function fetchWeeklyConfig(): Promise<WeeklyConfig> {
+  const response = await fetch(`${apiBaseUrl}/budget/weekly-config`, {
+    headers: createAuthorizedHeaders(getRequiredAccessToken()),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '예산 설정 조회 실패'}`)
+  }
+
+  return response.json()
+}
+
+export async function saveWeeklyBudgetConfig(weeklyLimit: number, alertThreshold: number): Promise<ApiStatusResponse> {
+  const response = await fetch(`${apiBaseUrl}/budget/set`, {
+    method: 'POST',
+    headers: createAuthorizedHeaders(getRequiredAccessToken(), {
+      'Content-Type': 'application/json',
+    }),
+    body: JSON.stringify({
+      weekly_limit: weeklyLimit,
+      alert_threshold: alertThreshold,
+    }),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '예산 저장 실패'}`)
+  }
+
+  return response.json()
 }

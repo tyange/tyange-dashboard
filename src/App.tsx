@@ -6,6 +6,7 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import AuthenticatedLayout from './components/AuthenticatedLayout'
 import AppFooter from './components/AppFooter'
 import BudgetDashboardPage from './features/budget/components/BudgetDashboardPage'
+import BudgetSetupPage from './features/budget/components/BudgetSetupPage'
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
@@ -41,6 +42,14 @@ function App() {
           component={() => (
             <ProtectedAppShell>
               <BudgetDashboardPage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/budget/setup"
+          component={() => (
+            <ProtectedAppShell>
+              <BudgetSetupPage />
             </ProtectedAppShell>
           )}
         />
