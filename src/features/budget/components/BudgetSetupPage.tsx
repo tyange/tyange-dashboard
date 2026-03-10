@@ -471,6 +471,9 @@ export default function BudgetSetupPage() {
                           <div>
                             <p class="text-sm font-medium text-foreground">{week.week_key}</p>
                             <p class="text-xs text-muted-foreground">{week.days}일 배분</p>
+                            <p class={`mt-1 text-xs ${week.projected_remaining < 0 ? 'text-amber-300' : 'text-muted-foreground'}`}>
+                              예상 잔여 {krwFormatter.format(week.projected_remaining)}
+                            </p>
                           </div>
                           <p class="text-sm font-semibold text-foreground">
                             {krwFormatter.format(week.weekly_limit)}

@@ -1,6 +1,6 @@
 # Tyange Dashboard Memory
 
-Last updated: 2026-03-09 (Asia/Seoul)
+Last updated: 2026-03-11 (Asia/Seoul)
 
 ## Project Snapshot
 - Frontend: SolidJS + TypeScript + Vite
@@ -53,12 +53,14 @@ Last updated: 2026-03-09 (Asia/Seoul)
 - Budget setup uses `GET /budget/weekly-config` to load the current week's config row and `POST /budget/set` to save current-week `weekly_limit` and `alert_threshold`
 - Budget setup page also exposes `POST /budget/rebalance` so the user can redistribute the remaining weekly budgets for a date range directly from the dashboard
 - `POST /budget/rebalance` now accepts optional `spent_so_far`; the dashboard exposes it as an optional override field and omits it when blank
+- `GET /budget/weekly`, `GET /budget/weekly/:week_key`, `GET /budget/weekly-config`, and `POST /budget/rebalance` now include `projected_remaining`; dashboard surfaces it as `예상 잔여`, including negative values after rebalance
 
 ## Data Contracts (Budget)
-- `WeeklySummary`: `week_key`, `weekly_limit`, `total_spent`, `remaining`, `usage_rate`, `alert`, `record_count`
+- `WeeklySummary`: `week_key`, `weekly_limit`, `total_spent`, `remaining`, `projected_remaining`, `usage_rate`, `alert`, `record_count`
 - `BudgetWeeksResponse`: `weeks` plus optional `min_week`, `max_week`
 - `WeeklySpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
-- `BudgetRebalanceResponse`: `total_budget`, `from_date`, `to_date`, `as_of_date`, `spent_so_far`, `remaining_budget`, `rebalance_from_week`, `is_overspent`, `weeks[]`
+- `WeeklyConfig`: `config_id`, `week_key`, `weekly_limit`, `projected_remaining`, `alert_threshold`
+- `BudgetRebalanceResponse`: `total_budget`, `from_date`, `to_date`, `as_of_date`, `spent_so_far`, `remaining_budget`, `rebalance_from_week`, `is_overspent`, `weeks[]` where each week includes `week_key`, `days`, `weekly_limit`, `projected_remaining`
 
 ## Practical Working Rules
 - Prefer minimal, targeted edits over broad refactors

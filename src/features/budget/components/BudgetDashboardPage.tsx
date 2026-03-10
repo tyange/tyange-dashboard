@@ -16,6 +16,7 @@ const emptySummary: WeeklySummary = {
   weekly_limit: 0,
   total_spent: 0,
   remaining: 0,
+  projected_remaining: 0,
   usage_rate: 0,
   alert: false,
   record_count: 0,

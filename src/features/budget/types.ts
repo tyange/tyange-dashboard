@@ -6,6 +6,7 @@ export type WeeklySummary = {
   weekly_limit: number
   total_spent: number
   remaining: number
+  projected_remaining: number
   usage_rate: number
   alert: boolean
   record_count: number
@@ -34,6 +35,7 @@ export type WeeklyConfig = {
   config_id: number
   week_key: string
   weekly_limit: number
+  projected_remaining: number
   alert_threshold: number
 }
 
@@ -41,6 +43,7 @@ export type BudgetRebalanceWeekItem = {
   week_key: string
   days: number
   weekly_limit: number
+  projected_remaining: number
 }
 
 export type BudgetRebalanceResponse = {

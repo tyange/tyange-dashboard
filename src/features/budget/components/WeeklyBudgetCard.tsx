@@ -22,6 +22,8 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
     'h-9 min-w-9 rounded-lg border border-border bg-secondary px-3 text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45'
   const viewMoreButton =
     'group inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold tracking-[0.01em] text-primary transition-all hover:border-primary/35 hover:bg-primary/16 hover:text-primary disabled:cursor-not-allowed disabled:border-border disabled:bg-secondary disabled:text-muted-foreground disabled:opacity-45'
+  const projectedRemainingTone =
+    props.summary.projected_remaining < 0 ? 'text-destructive' : 'text-foreground'
 
   return (
     <article id="weekly-budget">
@@ -79,6 +81,12 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
         <div class={metaCard}>
           <p class="text-sm text-muted-foreground">주차</p>
           <p class="mt-1 text-xl font-semibold text-foreground tabular-nums">{props.summary.week_key}</p>
+        </div>
+        <div class={metaCard}>
+          <p class="text-sm text-muted-foreground">예상 잔여</p>
+          <p class={`mt-1 text-xl font-semibold tabular-nums ${projectedRemainingTone}`}>
+            {krwFormatter.format(props.summary.projected_remaining)}
+          </p>
         </div>
         <div class={`${metaCard} ${props.disableFutureSpendMeta ? 'opacity-40 grayscale' : ''}`} aria-disabled={props.disableFutureSpendMeta}>
           <div class="flex items-center justify-between gap-2">
