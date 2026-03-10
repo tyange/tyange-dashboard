@@ -1,148 +1,62 @@
 import { useNavigate } from '@solidjs/router'
-import { createEffect, createMemo, createSignal, onMount, untrack } from 'solid-js'
-import {
-  fetchBudgetWeeks,
-  fetchWeeklySummary,
-  fetchWeeklySummaryByWeekKey,
-} from '../api'
+import { createMemo, createSignal, onMount } from 'solid-js'
+import { fetchBudgetSummary } from '../api'
 import { isBudgetNotConfiguredError } from '../errors'
-import type { WeeklySummary } from '../types'
-import { compareWeekKey, getWeekTabLabel } from '../weekKey'
+import type { BudgetSummary } from '../types'
 import BudgetSetupRequiredState from './BudgetSetupRequiredState'
 import WeeklyBudgetCard from './WeeklyBudgetCard'
 
-const emptySummary: WeeklySummary = {
-  week_key: '-',
-  weekly_limit: 0,
+const emptySummary: BudgetSummary = {
+  budget_id: 0,
+  total_budget: 0,
+  from_date: '-',
+  to_date: '-',
   total_spent: 0,
-  remaining: 0,
-  projected_remaining: 0,
+  remaining_budget: 0,
   usage_rate: 0,
   alert: false,
-  record_count: 0,
+  alert_threshold: 0,
 }
 
 export default function BudgetDashboardPage() {
   const navigate = useNavigate()
-  const [summaryByWeek, setSummaryByWeek] = createSignal<Record<string, WeeklySummary>>({})
-  const [knownWeekKeys, setKnownWeekKeys] = createSignal<string[]>([])
-  const [currentWeekKey, setCurrentWeekKey] = createSignal<string | null>(null)
-  const [anchorWeekKey, setAnchorWeekKey] = createSignal<string | null>(null)
+  const [summary, setSummary] = createSignal<BudgetSummary | null>(null)
   const [loading, setLoading] = createSignal(true)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
   const [requiresBudgetSetup, setRequiresBudgetSetup] = createSignal(false)
 
-  const buildKnownWeekKeys = (weeks: string[], currentKey?: string) => {
-    const unique = new Set(weeks)
-    if (currentKey) unique.add(currentKey)
-    return [...unique].sort(compareWeekKey)
-  }
-
-  const cacheWeekSummary = (data: WeeklySummary) => {
-    setSummaryByWeek((prev) => ({ ...prev, [data.week_key]: data }))
-    setCurrentWeekKey(data.week_key)
-  }
-
-  const refreshCurrentWeek = async () => {
+  const refreshSummary = async () => {
     setLoading(true)
     setErrorMessage(null)
     setRequiresBudgetSetup(false)
+
     try {
-      const [weeksResult, data] = await Promise.all([fetchBudgetWeeks(), fetchWeeklySummary()])
-      setAnchorWeekKey(data.week_key)
-      setKnownWeekKeys(buildKnownWeekKeys(weeksResult.weeks ?? [], data.week_key))
-      cacheWeekSummary(data)
+      const data = await fetchBudgetSummary()
+      setSummary(data)
     } catch (error) {
       if (isBudgetNotConfiguredError(error)) {
         setRequiresBudgetSetup(true)
+        setSummary(null)
+      } else {
+        setErrorMessage((error as Error).message)
       }
-      setErrorMessage((error as Error).message)
     } finally {
       setLoading(false)
     }
   }
 
   onMount(() => {
-    void refreshCurrentWeek()
+    void refreshSummary()
   })
-
-  const currentSummary = createMemo(() => {
-    const key = currentWeekKey()
-    if (!key) return null
-    return summaryByWeek()[key] ?? null
-  })
-
-  const currentWeekIndex = createMemo(() => {
-    const key = currentWeekKey()
-    if (!key) return -1
-    return knownWeekKeys().indexOf(key)
-  })
-
-  const canGoPrev = createMemo(() => !loading() && currentWeekIndex() > 0)
-  const canGoNext = createMemo(() => !loading() && currentWeekIndex() >= 0 && currentWeekIndex() < knownWeekKeys().length - 1)
-
-  const moveKnownWeek = (direction: 1 | -1) => {
-    const idx = currentWeekIndex()
-    if (idx < 0) return
-    const nextIdx = idx + direction
-    if (nextIdx < 0 || nextIdx >= knownWeekKeys().length) return
-    const targetWeekKey = knownWeekKeys()[nextIdx]
-    const cached = summaryByWeek()[targetWeekKey]
-    if (cached) {
-      setCurrentWeekKey(targetWeekKey)
-      return
-    }
-
-    setLoading(true)
-    setErrorMessage(null)
-    setRequiresBudgetSetup(false)
-    void fetchWeeklySummaryByWeekKey(targetWeekKey)
-      .then((data) => {
-        setSummaryByWeek((prev) => ({ ...prev, [data.week_key]: data }))
-        setCurrentWeekKey(data.week_key)
-      })
-      .catch((error) => {
-        if (isBudgetNotConfiguredError(error)) {
-          setRequiresBudgetSetup(true)
-        }
-        setErrorMessage((error as Error).message)
-      })
-      .finally(() => {
-        setLoading(false)
-      })
-  }
 
   const usagePercent = createMemo(() => {
-    const value = currentSummary()?.usage_rate ?? 0
+    const value = summary()?.usage_rate ?? 0
     return Math.max(0, Math.min(100, value * 100))
-  })
-
-  const weekTabLabel = createMemo(() => getWeekTabLabel(currentSummary()?.week_key, anchorWeekKey()))
-
-  const disableFutureSpendMeta = createMemo(() => {
-    const data = currentSummary()
-    const anchor = anchorWeekKey()
-    if (!data || !anchor) return false
-    return compareWeekKey(data.week_key, anchor) > 0 && data.total_spent === 0 && data.record_count === 0
-  })
-
-  const openRecordsPage = () => {
-    const weekKey = untrack(() => currentSummary()?.week_key)
-    if (!weekKey) return
-    void navigate(`/records?week=${encodeURIComponent(weekKey)}`)
-  }
-
-  createEffect(() => {
-    const weekKey = currentSummary()?.week_key
-    if (!weekKey) return
-    setSummaryByWeek((prev) => (prev[weekKey] ? prev : { ...prev, [weekKey]: currentSummary() ?? emptySummary }))
   })
 
   return (
     <section aria-label="Dashboard">
-      {requiresBudgetSetup() && (
-        <BudgetSetupRequiredState />
-      )}
+      {requiresBudgetSetup() && <BudgetSetupRequiredState />}
 
       {!requiresBudgetSetup() && errorMessage() && (
         <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -152,18 +66,12 @@ export default function BudgetDashboardPage() {
 
       {!requiresBudgetSetup() && (
         <WeeklyBudgetCard
-          title="주간 예산"
-          summary={currentSummary() ?? emptySummary}
+          title="활성 기간 예산"
+          summary={summary() ?? emptySummary}
           loading={loading()}
-          canGoPrev={canGoPrev()}
-          canGoNext={canGoNext()}
-          onPrev={() => moveKnownWeek(-1)}
-          onNext={() => moveKnownWeek(1)}
-          onRefresh={() => void refreshCurrentWeek()}
-          weekTabLabel={weekTabLabel()}
+          onRefresh={() => void refreshSummary()}
           usagePercent={usagePercent()}
-          disableFutureSpendMeta={disableFutureSpendMeta()}
-          onOpenRecordsPage={openRecordsPage}
+          onOpenRecordsPage={() => void navigate('/records')}
         />
       )}
     </section>

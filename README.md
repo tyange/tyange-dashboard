@@ -24,8 +24,8 @@ Your app is ready to be deployed!
 ## Features
 
 - JWT login/signup flow against `tyange-cms-api`
-- Budget dashboard and weekly spend record views
-- Weekly budget setup and rebalance actions
+- Budget dashboard and active-period spend record views
+- Total-budget setup and rebalance actions for an active date range
 - Per-user API key management page at `/api-keys` for issuing and revoking keys used with `X-API-Key`
 
 ## Deployment

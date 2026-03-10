@@ -31,12 +31,9 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Budget dashboard route UI: `src/features/budget/components/BudgetDashboardPage.tsx`
 - Spend records route UI: `src/features/budget/components/SpendRecordsRoutePage.tsx`
 - Budget setup route UI: `src/features/budget/components/BudgetSetupPage.tsx`
-- Week key parsing/comparison: `src/features/budget/weekKey.ts`
 
 ## Behavior Conventions In Use
 - Keep API fetch logic in `src/features/budget/api.ts`
-- Cache loaded weekly summaries in-memory by `week_key`
-- Week navigation is controlled via toolbar buttons (prev/next and current week refresh)
 - Public landing page lives at `/` and only introduces the app plus login guidance
 - Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
 - Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
@@ -46,27 +43,25 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, budget setup, and API key management entries
 - API errors are surfaced in UI as a top error alert block
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
-- `기록 수` 카드의 `더 보기` 버튼 is the primary UI entry into `/records?week={week_key}`
-- 소비 기록 페이지는 `week` query param을 공식 입력으로 받고 `GET /budget/spending?week={week_key}`로 조회
-- 소비 기록 페이지는 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id`를 사용해 인라인으로 생성/수정/삭제를 처리하며, 수정 결과 주차가 바뀌면 해당 `week` 화면으로 즉시 이동한다
+- 대시보드는 `GET /budget` 단일 응답으로 활성 기간 총예산을 표시하고, 404는 "활성 예산 없음" 상태로 처리한다
+- 소비 기록 페이지는 `GET /budget/spending` 응답의 `weeks[]` 그룹을 그대로 렌더링하고 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id` 후 `GET /budget` + `GET /budget/spending` 재조회로 요약과 목록을 동기화한다
 - Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
-- Budget dashboard and records routes treat `API 404` from budget endpoints as "예산 미등록" state and show a dedicated setup-required page instead of a generic error alert
-- Budget setup uses `GET /budget/weekly-config` to load the current week's config row and `POST /budget/set` to save current-week `weekly_limit` and `alert_threshold`
-- Budget setup page also exposes `POST /budget/rebalance` so the user can redistribute the remaining weekly budgets for a date range directly from the dashboard
+- Budget dashboard and records routes treat `API 404` from budget endpoints as "활성 예산 없음" state and show a dedicated setup-required page instead of a generic error alert
+- Budget setup uses `GET /budget` to prefill the active budget and `POST /budget/plan` to create a total budget with `from_date`/`to_date`
+- Budget setup page also exposes `POST /budget/rebalance` so the user can recalculate the active date-range budget from the dashboard flow
 - `POST /budget/rebalance` now accepts optional `spent_so_far`; the dashboard exposes it as an optional override field and omits it when blank
-- `GET /budget/weekly`, `GET /budget/weekly/:week_key`, `GET /budget/weekly-config`, and `POST /budget/rebalance` now include `projected_remaining`; dashboard surfaces it as `예상 잔여`, including negative values after rebalance
 
 ## Data Contracts (Budget)
-- `WeeklySummary`: `week_key`, `weekly_limit`, `total_spent`, `remaining`, `projected_remaining`, `usage_rate`, `alert`, `record_count`
-- `BudgetWeeksResponse`: `weeks` plus optional `min_week`, `max_week`
-- `WeeklySpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
-- `WeeklyConfig`: `config_id`, `week_key`, `weekly_limit`, `projected_remaining`, `alert_threshold`
-- `BudgetRebalanceResponse`: `total_budget`, `from_date`, `to_date`, `as_of_date`, `spent_so_far`, `remaining_budget`, `rebalance_from_week`, `is_overspent`, `weeks[]` where each week includes `week_key`, `days`, `weekly_limit`, `projected_remaining`
+- `BudgetSummary`: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`
+- `SpendingListResponse`: `budget_id`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `weeks[]`
+- `SpendingWeekGroup`: `week_key`, `weekly_total`, `record_count`, `records[]`
+- `SpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
+- `BudgetPlanResponse`: `budget_id`, `total_budget`, `from_date`, `to_date`, `daily_budget`, `spent_so_far`, `remaining_budget`, `alert_threshold`
+- `BudgetRebalanceResponse`: `budget_id`, `total_budget`, `from_date`, `to_date`, `as_of_date`, `spent_so_far`, `remaining_budget`, `alert_threshold`, `is_overspent`
 
 ## Practical Working Rules
 - Prefer minimal, targeted edits over broad refactors
 - Preserve Korean UI labels/messages unless explicitly requested to change
-- Keep week-key handling centralized in `weekKey.ts` to avoid duplicated date logic
 - When adding API calls, keep consistent error pattern: `API ${status}: ${bodyText || fallbackMessage}`
 
 ## Outstanding TODOs

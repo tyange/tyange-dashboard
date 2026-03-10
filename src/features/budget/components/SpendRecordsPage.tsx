@@ -1,10 +1,13 @@
 import { For, Show } from 'solid-js'
 import { krwFormatter } from '../format'
-import type { WeeklySpendRecord } from '../types'
+import type { SpendRecord, SpendingWeekGroup } from '../types'
 
 export type SpendRecordsPageProps = {
-  weekKey: string
-  records: WeeklySpendRecord[]
+  fromDate: string
+  toDate: string
+  totalSpent: number
+  remainingBudget: number
+  weekGroups: SpendingWeekGroup[]
   loading: boolean
   saving: boolean
   deletingRecordId: number | null
@@ -18,7 +21,7 @@ export type SpendRecordsPageProps = {
   onMerchantInput: (value: string) => void
   onTransactedAtInput: (value: string) => void
   onSubmit: () => void
-  onStartEditing: (record: WeeklySpendRecord) => void
+  onStartEditing: (record: SpendRecord) => void
   onCancelEditing: () => void
   onDelete: (recordId: number) => void
   onBack: () => void
@@ -56,8 +59,10 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
       <section class={card}>
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="text-sm font-medium text-foreground">{props.weekKey}</p>
-            <p class="mt-1 text-sm text-muted-foreground">총 {props.records.length}건</p>
+            <p class="text-sm font-medium text-foreground">{props.fromDate} ~ {props.toDate}</p>
+            <p class="mt-1 text-sm text-muted-foreground">
+              총 지출 {krwFormatter.format(props.totalSpent)} · 잔여 {krwFormatter.format(props.remainingBudget)}
+            </p>
           </div>
           <button type="button" class={mutedButton} onClick={props.onBack}>
             대시보드로
@@ -69,7 +74,7 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-foreground">{props.editingRecordId ? '소비 기록 수정' : '소비 기록 추가'}</h2>
-            <p class="mt-1 text-xs text-muted-foreground">수정 시 다른 주차로 이동하면 해당 주차 화면으로 바로 전환됩니다.</p>
+            <p class="mt-1 text-xs text-muted-foreground">week는 서버 응답 기준으로만 그룹화해 표시합니다.</p>
           </div>
           <Show when={props.editingRecordId !== null}>
             <button type="button" class={mutedButton} onClick={props.onCancelEditing}>
@@ -139,38 +144,54 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
 
       <section class={card}>
         <Show when={!props.loading} fallback={<p class="text-sm text-muted-foreground">소비 기록을 불러오는 중...</p>}>
-          <Show when={props.records.length > 0} fallback={<p class="text-sm text-muted-foreground">소비 기록이 없습니다.</p>}>
-            <ul class="space-y-2">
-              <For each={props.records}>
-                {(record) => (
-                  <li class="flex flex-col gap-3 rounded-lg border border-border/80 bg-secondary/20 px-3 py-3 md:flex-row md:items-center md:justify-between">
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium text-foreground">{record.merchant || '기타 지출'}</p>
-                      <p class="mt-0.5 text-xs text-muted-foreground">{formatRecordDate(record.transacted_at)}</p>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3 md:justify-end">
-                      <span class="text-sm font-semibold text-foreground tabular-nums">
-                        {krwFormatter.format(record.amount)}
-                      </span>
-                      <div class="flex items-center gap-2">
-                        <button type="button" class={mutedButton} onClick={() => props.onStartEditing(record)} disabled={props.saving}>
-                          수정
-                        </button>
-                        <button
-                          type="button"
-                          class={dangerButton}
-                          onClick={() => props.onDelete(record.record_id)}
-                          disabled={props.deletingRecordId !== null}
-                        >
-                          {props.deletingRecordId === record.record_id ? '삭제 중...' : '삭제'}
-                        </button>
+          <Show when={props.weekGroups.length > 0} fallback={<p class="text-sm text-muted-foreground">소비 기록이 없습니다.</p>}>
+            <div class="space-y-5">
+              <For each={props.weekGroups}>
+                {(group) => (
+                  <section class="space-y-3">
+                    <header class="flex items-end justify-between gap-3 border-b border-border/70 pb-2">
+                      <div>
+                        <p class="text-sm font-semibold text-foreground">{group.week_key}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">{group.record_count}건</p>
                       </div>
-                    </div>
-                  </li>
+                      <p class="text-sm font-semibold text-foreground tabular-nums">{krwFormatter.format(group.weekly_total)}</p>
+                    </header>
+
+                    <ul class="space-y-2">
+                      <For each={group.records}>
+                        {(record) => (
+                          <li class="flex flex-col gap-3 rounded-lg border border-border/80 bg-secondary/20 px-3 py-3 md:flex-row md:items-center md:justify-between">
+                            <div class="min-w-0">
+                              <p class="truncate text-sm font-medium text-foreground">{record.merchant || '기타 지출'}</p>
+                              <p class="mt-0.5 text-xs text-muted-foreground">{formatRecordDate(record.transacted_at)}</p>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-3 md:justify-end">
+                              <span class="text-sm font-semibold text-foreground tabular-nums">
+                                {krwFormatter.format(record.amount)}
+                              </span>
+                              <div class="flex items-center gap-2">
+                                <button type="button" class={mutedButton} onClick={() => props.onStartEditing(record)} disabled={props.saving}>
+                                  수정
+                                </button>
+                                <button
+                                  type="button"
+                                  class={dangerButton}
+                                  onClick={() => props.onDelete(record.record_id)}
+                                  disabled={props.deletingRecordId !== null}
+                                >
+                                  {props.deletingRecordId === record.record_id ? '삭제 중...' : '삭제'}
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        )}
+                      </For>
+                    </ul>
+                  </section>
                 )}
               </For>
-            </ul>
+            </div>
           </Show>
         </Show>
       </section>

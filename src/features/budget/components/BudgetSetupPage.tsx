@@ -1,8 +1,8 @@
 import { Popover } from '@kobalte/core/popover'
 import { TextField } from '@kobalte/core/text-field'
 import { useNavigate } from '@solidjs/router'
-import { For, Show, createSignal, onMount } from 'solid-js'
-import { fetchWeeklyConfig, rebalanceBudget, saveWeeklyBudgetConfig } from '../api'
+import { Show, createSignal, onMount } from 'solid-js'
+import { createBudgetPlan, fetchBudgetSummary, rebalanceBudget } from '../api'
 import { krwFormatter } from '../format'
 import type { BudgetRebalanceResponse } from '../types'
 
@@ -159,8 +159,10 @@ function DateField(props: DateFieldProps) {
 
 export default function BudgetSetupPage() {
   const navigate = useNavigate()
-  const [weekKey, setWeekKey] = createSignal('-')
-  const [weeklyLimitInput, setWeeklyLimitInput] = createSignal('')
+  const [hasActiveBudget, setHasActiveBudget] = createSignal(false)
+  const [planTotalBudgetInput, setPlanTotalBudgetInput] = createSignal('')
+  const [planFromDateInput, setPlanFromDateInput] = createSignal('')
+  const [planToDateInput, setPlanToDateInput] = createSignal('')
   const [alertThresholdInput, setAlertThresholdInput] = createSignal('85')
   const [rebalanceTotalBudgetInput, setRebalanceTotalBudgetInput] = createSignal('')
   const [rebalanceSpentSoFarInput, setRebalanceSpentSoFarInput] = createSignal('')
@@ -177,13 +179,22 @@ export default function BudgetSetupPage() {
   const [rebalanceResult, setRebalanceResult] = createSignal<BudgetRebalanceResponse | null>(null)
 
   onMount(() => {
-    void fetchWeeklyConfig()
-      .then((config) => {
-        setWeekKey(config.week_key)
-        setWeeklyLimitInput(String(config.weekly_limit))
-        setAlertThresholdInput(String(toThresholdPercent(config.alert_threshold)))
+    void fetchBudgetSummary()
+      .then((summary) => {
+        setHasActiveBudget(true)
+        setPlanTotalBudgetInput(String(summary.total_budget))
+        setPlanFromDateInput(summary.from_date)
+        setPlanToDateInput(summary.to_date)
+        setAlertThresholdInput(String(toThresholdPercent(summary.alert_threshold)))
+        setRebalanceTotalBudgetInput(String(summary.total_budget))
+        setRebalanceFromDateInput(summary.from_date)
+        setRebalanceToDateInput(summary.to_date)
       })
       .catch((error) => {
+        if ((error as Error).message.startsWith('API 404:')) {
+          setHasActiveBudget(false)
+          return
+        }
         setErrorMessage((error as Error).message)
       })
       .finally(() => {
@@ -192,15 +203,21 @@ export default function BudgetSetupPage() {
   })
 
   const submitBudgetSetup = async () => {
-    if (saving()) {
+    if (saving()) return
+
+    const totalBudget = Number(planTotalBudgetInput())
+    const alertThresholdPercent = Number(alertThresholdInput())
+    const fromDate = planFromDateInput().trim()
+    const toDate = planToDateInput().trim()
+
+    if (!Number.isFinite(totalBudget) || totalBudget <= 0) {
+      setErrorMessage('총예산은 0보다 큰 숫자로 입력해주세요.')
+      setSuccessMessage(null)
       return
     }
 
-    const weeklyLimit = Number(weeklyLimitInput())
-    const alertThresholdPercent = Number(alertThresholdInput())
-
-    if (!Number.isFinite(weeklyLimit) || weeklyLimit <= 0) {
-      setErrorMessage('주간 예산은 0보다 큰 숫자로 입력해주세요.')
+    if (!fromDate || !toDate) {
+      setErrorMessage('시작일과 종료일을 모두 입력해주세요.')
       setSuccessMessage(null)
       return
     }
@@ -216,8 +233,8 @@ export default function BudgetSetupPage() {
     setSuccessMessage(null)
 
     try {
-      const result = await saveWeeklyBudgetConfig(weeklyLimit, toThresholdRatio(alertThresholdPercent))
-      setSuccessMessage(result.message ?? '예산을 저장했습니다.')
+      const result = await createBudgetPlan(totalBudget, fromDate, toDate, toThresholdRatio(alertThresholdPercent))
+      setSuccessMessage(result.message ?? '예산을 생성했습니다.')
       void navigate('/dashboard', { replace: true })
     } catch (error) {
       setErrorMessage((error as Error).message)
@@ -227,9 +244,7 @@ export default function BudgetSetupPage() {
   }
 
   const submitRebalance = async () => {
-    if (rebalancing()) {
-      return
-    }
+    if (rebalancing()) return
 
     const totalBudget = Number(rebalanceTotalBudgetInput())
     const spentSoFarRaw = rebalanceSpentSoFarInput().trim()
@@ -240,13 +255,13 @@ export default function BudgetSetupPage() {
     const spentSoFar = spentSoFarRaw === '' ? undefined : Number(spentSoFarRaw)
 
     if (!Number.isFinite(totalBudget) || totalBudget <= 0) {
-      setRebalanceErrorMessage('총 예산은 0보다 큰 숫자로 입력해주세요.')
+      setRebalanceErrorMessage('총예산은 0보다 큰 숫자로 입력해주세요.')
       setRebalanceSuccessMessage(null)
       return
     }
 
     if (!fromDate || !toDate || !asOfDate) {
-      setRebalanceErrorMessage('시작일, 종료일, 재설정 기준일을 모두 입력해주세요.')
+      setRebalanceErrorMessage('시작일, 종료일, 재계산 기준일을 모두 입력해주세요.')
       setRebalanceSuccessMessage(null)
       return
     }
@@ -279,7 +294,7 @@ export default function BudgetSetupPage() {
       )
 
       setRebalanceResult(result.data ?? null)
-      setRebalanceSuccessMessage(result.message ?? '예산을 재설정했습니다.')
+      setRebalanceSuccessMessage(result.message ?? '예산을 재계산했습니다.')
     } catch (error) {
       setRebalanceErrorMessage((error as Error).message)
     } finally {
@@ -294,7 +309,7 @@ export default function BudgetSetupPage() {
       <header class="mb-8">
         <h1 class="text-2xl font-semibold tracking-tight text-foreground">예산 설정</h1>
         <p class="mt-1 text-sm text-muted-foreground">
-          이번 주 예산을 직접 저장하거나, 기간 총예산 기준으로 남은 주차 예산을 다시 배분할 수 있습니다.
+          기간 총예산을 생성하거나 현재 활성 기간 기준으로 예산을 재계산할 수 있습니다.
         </p>
       </header>
 
@@ -303,8 +318,10 @@ export default function BudgetSetupPage() {
           <Show when={!loading()} fallback={<p class="text-sm text-muted-foreground">예산 설정을 불러오는 중...</p>}>
             <div class="mb-6 flex items-center justify-between">
               <div>
-                <p class="text-sm text-muted-foreground">대상 주차</p>
-                <p class="mt-1 text-xl font-semibold text-foreground">{weekKey()}</p>
+                <p class="text-sm text-muted-foreground">{hasActiveBudget() ? '현재 활성 예산' : '새 예산 생성'}</p>
+                <p class="mt-1 text-xl font-semibold text-foreground">
+                  {hasActiveBudget() ? '활성 기간 예산이 있습니다' : '활성 예산이 없습니다'}
+                </p>
               </div>
               <button
                 type="button"
@@ -323,11 +340,16 @@ export default function BudgetSetupPage() {
               }}
             >
               <MoneyField
-                label="주간 예산"
-                value={weeklyLimitInput()}
-                onInput={setWeeklyLimitInput}
-                placeholder="예: 500000"
+                label="총예산"
+                value={planTotalBudgetInput()}
+                onInput={setPlanTotalBudgetInput}
+                placeholder="예: 2500000"
               />
+
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <DateField label="시작일" value={planFromDateInput()} onInput={setPlanFromDateInput} />
+                <DateField label="종료일" value={planToDateInput()} onInput={setPlanToDateInput} />
+              </div>
 
               <PercentField value={alertThresholdInput()} onInput={setAlertThresholdInput} />
 
@@ -352,7 +374,7 @@ export default function BudgetSetupPage() {
                   disabled={saving()}
                   class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving() ? '저장 중...' : '이번 주 예산 저장'}
+                  {saving() ? '저장 중...' : hasActiveBudget() ? '활성 예산 다시 생성' : '활성 예산 생성'}
                 </button>
               </div>
             </form>
@@ -361,9 +383,9 @@ export default function BudgetSetupPage() {
 
         <section class={panelClass}>
           <div class="mb-6">
-            <h2 class="text-xl font-semibold tracking-tight text-foreground">예산 재설정</h2>
+            <h2 class="text-xl font-semibold tracking-tight text-foreground">예산 재계산</h2>
             <p class="mt-1 text-sm text-muted-foreground">
-              실제 소비를 반영해 `as_of_date` 이후 남은 주차 예산을 다시 계산하고 저장합니다.
+              실제 소비를 반영해 현재 활성 기간 총예산을 다시 계산합니다.
             </p>
           </div>
 
@@ -391,15 +413,11 @@ export default function BudgetSetupPage() {
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <DateField label="시작일" value={rebalanceFromDateInput()} onInput={setRebalanceFromDateInput} />
               <DateField label="종료일" value={rebalanceToDateInput()} onInput={setRebalanceToDateInput} />
-              <DateField
-                label="재설정 기준일"
-                value={rebalanceAsOfDateInput()}
-                onInput={setRebalanceAsOfDateInput}
-              />
+              <DateField label="재계산 기준일" value={rebalanceAsOfDateInput()} onInput={setRebalanceAsOfDateInput} />
             </div>
 
             <p class="text-xs leading-5 text-muted-foreground">
-              누적 소비를 비워두면 서버가 소비 기록으로 계산합니다. 값을 직접 넣으면 그 금액을 기준으로 재설정합니다.
+              누적 소비를 비워두면 서버가 소비 기록으로 계산합니다. 값을 직접 넣으면 그 금액을 기준으로 재계산합니다.
             </p>
 
             <Show when={rebalanceErrorMessage()}>
@@ -423,7 +441,7 @@ export default function BudgetSetupPage() {
                 disabled={rebalancing()}
                 class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {rebalancing() ? '재설정 중...' : '남은 주차 예산 재설정'}
+                {rebalancing() ? '재계산 중...' : '활성 예산 재계산'}
               </button>
             </div>
           </form>
@@ -434,21 +452,23 @@ export default function BudgetSetupPage() {
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div class="rounded-2xl border border-border bg-background/60 p-4">
                     <p class="text-sm text-muted-foreground">누적 소비</p>
-                    <p class="mt-1 text-lg font-semibold text-foreground">
-                      {krwFormatter.format(result().spent_so_far)}
-                    </p>
+                    <p class="mt-1 text-lg font-semibold text-foreground">{krwFormatter.format(result().spent_so_far)}</p>
                   </div>
                   <div class="rounded-2xl border border-border bg-background/60 p-4">
                     <p class="text-sm text-muted-foreground">남은 총예산</p>
+                    <p class="mt-1 text-lg font-semibold text-foreground">{krwFormatter.format(result().remaining_budget)}</p>
+                  </div>
+                  <div class="rounded-2xl border border-border bg-background/60 p-4">
+                    <p class="text-sm text-muted-foreground">기준일</p>
+                    <p class="mt-1 text-lg font-semibold text-foreground">{result().as_of_date}</p>
+                  </div>
+                  <div class="rounded-2xl border border-border bg-background/60 p-4">
+                    <p class="text-sm text-muted-foreground">알림 기준</p>
                     <p class="mt-1 text-lg font-semibold text-foreground">
-                      {krwFormatter.format(result().remaining_budget)}
+                      {(result().alert_threshold * 100).toFixed(0)}%
                     </p>
                   </div>
-                  <div class="rounded-2xl border border-border bg-background/60 p-4">
-                    <p class="text-sm text-muted-foreground">재설정 시작 주차</p>
-                    <p class="mt-1 text-lg font-semibold text-foreground">{result().rebalance_from_week}</p>
-                  </div>
-                  <div class="rounded-2xl border border-border bg-background/60 p-4">
+                  <div class="rounded-2xl border border-border bg-background/60 p-4 md:col-span-2">
                     <p class="text-sm text-muted-foreground">대상 기간</p>
                     <p class="mt-1 text-lg font-semibold text-foreground">
                       {result().from_date} ~ {result().to_date}
@@ -458,31 +478,9 @@ export default function BudgetSetupPage() {
 
                 <Show when={result().is_overspent}>
                   <div class="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                    누적 소비가 총예산을 초과했습니다. API는 미래 주차 예산을 0원으로 저장합니다.
+                    누적 소비가 총예산을 초과했습니다.
                   </div>
                 </Show>
-
-                <div>
-                  <h3 class="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">재설정 결과</h3>
-                  <div class="mt-3 space-y-3">
-                    <For each={result().weeks}>
-                      {(week) => (
-                        <div class="flex items-center justify-between rounded-2xl border border-border bg-background/60 px-4 py-3">
-                          <div>
-                            <p class="text-sm font-medium text-foreground">{week.week_key}</p>
-                            <p class="text-xs text-muted-foreground">{week.days}일 배분</p>
-                            <p class={`mt-1 text-xs ${week.projected_remaining < 0 ? 'text-amber-300' : 'text-muted-foreground'}`}>
-                              예상 잔여 {krwFormatter.format(week.projected_remaining)}
-                            </p>
-                          </div>
-                          <p class="text-sm font-semibold text-foreground">
-                            {krwFormatter.format(week.weekly_limit)}
-                          </p>
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                </div>
               </div>
             )}
           </Show>

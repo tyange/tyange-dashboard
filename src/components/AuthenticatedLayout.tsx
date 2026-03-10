@@ -41,7 +41,7 @@ export default function AuthenticatedLayout(props: ParentProps) {
           예산
         </A>
         <A href="/budget/setup" class={navLinkClass('/budget/setup')}>
-          설정
+          예산 설정
         </A>
         <A href="/api-keys" class={navLinkClass('/api-keys')}>
           API 키
