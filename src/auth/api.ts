@@ -72,6 +72,16 @@ export function createAuthorizedHeaders(accessToken: string, init?: HeadersInit)
   }
 }
 
+export function getRequiredAccessToken() {
+  const session = loadStoredSession()
+
+  if (!session?.access_token) {
+    throw new Error('로그인이 필요합니다.')
+  }
+
+  return session.access_token
+}
+
 export async function fetchMe(accessToken: string): Promise<MeResponse> {
   const response = await fetch(`${getApiBaseUrl()}/me`, {
     headers: createAuthorizedHeaders(accessToken),

@@ -37,9 +37,27 @@ export type WeeklyConfig = {
   alert_threshold: number
 }
 
-export type ApiStatusResponse = {
+export type BudgetRebalanceWeekItem = {
+  week_key: string
+  days: number
+  weekly_limit: number
+}
+
+export type BudgetRebalanceResponse = {
+  total_budget: number
+  from_date: string
+  to_date: string
+  as_of_date: string
+  spent_so_far: number
+  remaining_budget: number
+  rebalance_from_week: string
+  is_overspent: boolean
+  weeks: BudgetRebalanceWeekItem[]
+}
+
+export type ApiStatusResponse<T = null> = {
   status: boolean
-  data?: null
+  data?: T | null
   message?: string | null
 }
 

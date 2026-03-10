@@ -14,7 +14,7 @@ export default function BudgetSetupRequiredState(props: BudgetSetupRequiredState
       <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Budget Setup</p>
       <h2 class="mt-3 text-xl font-semibold text-foreground">{props.title ?? '예산을 먼저 등록해주세요.'}</h2>
       <p class="mt-2 text-sm leading-6 text-muted-foreground">
-        {props.description ?? '아직 이번 주 예산 설정이 없습니다. CMS에서 예산을 등록한 뒤 다시 확인해주세요.'}
+        {props.description ?? '아직 이번 주 예산 설정이 없습니다. 설정 페이지에서 예산을 등록하거나 재설정한 뒤 다시 확인해주세요.'}
       </p>
       <div class="mt-5">
         <div class="flex flex-wrap items-center gap-3">

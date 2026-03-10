@@ -21,6 +21,13 @@ It correctly bundles Solid in production mode and optimizes the build for the be
 The build is minified and the filenames include the hashes.<br>
 Your app is ready to be deployed!
 
+## Features
+
+- JWT login/signup flow against `tyange-cms-api`
+- Budget dashboard and weekly spend record views
+- Weekly budget setup and rebalance actions
+- Per-user API key management page at `/api-keys` for issuing and revoking keys used with `X-API-Key`
+
 ## Deployment
 
 This project deploys to AWS (Lightsail/EC2) as static files served by Nginx.

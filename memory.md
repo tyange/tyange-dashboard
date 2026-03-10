@@ -25,6 +25,7 @@ Last updated: 2026-03-09 (Asia/Seoul)
 - Auth state/context: `src/auth/AuthProvider.tsx`
 - Public pages: `src/pages/*`
 - Authenticated layout: `src/components/AuthenticatedLayout.tsx`
+- API key management UI: `src/features/api-keys/*`
 - Budget domain: `src/features/budget/*`
 - Main API layer: `src/features/budget/api.ts`
 - Budget dashboard route UI: `src/features/budget/components/BudgetDashboardPage.tsx`
@@ -40,19 +41,24 @@ Last updated: 2026-03-09 (Asia/Seoul)
 - Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
 - Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
 - Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
+- Protected API key management page lives at `/api-keys` and manages only the currently logged-in user's keys
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
-- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and only exposes the budget dashboard entry
+- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, budget setup, and API key management entries
 - API errors are surfaced in UI as a top error alert block
+- API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
 - `기록 수` 카드의 `더 보기` 버튼 is the primary UI entry into `/records?week={week_key}`
 - 소비 기록 페이지는 `week` query param을 공식 입력으로 받고 `GET /budget/spending?week={week_key}`로 조회
 - Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
 - Budget dashboard and records routes treat `API 404` from budget endpoints as "예산 미등록" state and show a dedicated setup-required page instead of a generic error alert
 - Budget setup uses `GET /budget/weekly-config` to load the current week's config row and `POST /budget/set` to save current-week `weekly_limit` and `alert_threshold`
+- Budget setup page also exposes `POST /budget/rebalance` so the user can redistribute the remaining weekly budgets for a date range directly from the dashboard
+- `POST /budget/rebalance` now accepts optional `spent_so_far`; the dashboard exposes it as an optional override field and omits it when blank
 
 ## Data Contracts (Budget)
 - `WeeklySummary`: `week_key`, `weekly_limit`, `total_spent`, `remaining`, `usage_rate`, `alert`, `record_count`
 - `BudgetWeeksResponse`: `weeks` plus optional `min_week`, `max_week`
 - `WeeklySpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
+- `BudgetRebalanceResponse`: `total_budget`, `from_date`, `to_date`, `as_of_date`, `spent_so_far`, `remaining_budget`, `rebalance_from_week`, `is_overspent`, `weeks[]`
 
 ## Practical Working Rules
 - Prefer minimal, targeted edits over broad refactors

@@ -5,6 +5,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AuthenticatedLayout from './components/AuthenticatedLayout'
 import AppFooter from './components/AppFooter'
+import ApiKeysPage from './features/api-keys/components/ApiKeysPage'
 import BudgetDashboardPage from './features/budget/components/BudgetDashboardPage'
 import BudgetSetupPage from './features/budget/components/BudgetSetupPage'
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
@@ -58,6 +59,14 @@ function App() {
           component={() => (
             <ProtectedAppShell>
               <SpendRecordsRoutePage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/api-keys"
+          component={() => (
+            <ProtectedAppShell>
+              <ApiKeysPage />
             </ProtectedAppShell>
           )}
         />

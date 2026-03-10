@@ -1,24 +1,15 @@
 import type {
   ApiStatusResponse,
+  BudgetRebalanceResponse,
   BudgetWeeksResponse,
   SpendingListResponse,
   WeeklyConfig,
   WeeklySpendRecord,
   WeeklySummary,
 } from './types'
-import { createAuthorizedHeaders, getApiBaseUrl, loadStoredSession } from '../../auth/api'
+import { createAuthorizedHeaders, getApiBaseUrl, getRequiredAccessToken } from '../../auth/api'
 
 const apiBaseUrl = getApiBaseUrl()
-
-function getRequiredAccessToken() {
-  const session = loadStoredSession()
-
-  if (!session?.access_token) {
-    throw new Error('로그인이 필요합니다.')
-  }
-
-  return session.access_token
-}
 
 export async function fetchWeeklySummary(): Promise<WeeklySummary> {
   const response = await fetch(`${apiBaseUrl}/budget/weekly`, {
@@ -101,6 +92,37 @@ export async function saveWeeklyBudgetConfig(weeklyLimit: number, alertThreshold
   if (!response.ok) {
     const bodyText = await response.text()
     throw new Error(`API ${response.status}: ${bodyText || '예산 저장 실패'}`)
+  }
+
+  return response.json()
+}
+
+export async function rebalanceBudget(
+  totalBudget: number,
+  fromDate: string,
+  toDate: string,
+  asOfDate: string,
+  alertThreshold: number,
+  spentSoFar?: number,
+): Promise<ApiStatusResponse<BudgetRebalanceResponse>> {
+  const response = await fetch(`${apiBaseUrl}/budget/rebalance`, {
+    method: 'POST',
+    headers: createAuthorizedHeaders(getRequiredAccessToken(), {
+      'Content-Type': 'application/json',
+    }),
+    body: JSON.stringify({
+      total_budget: totalBudget,
+      spent_so_far: spentSoFar,
+      from_date: fromDate,
+      to_date: toDate,
+      as_of_date: asOfDate,
+      alert_threshold: alertThreshold,
+    }),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '예산 재설정 실패'}`)
   }
 
   return response.json()
