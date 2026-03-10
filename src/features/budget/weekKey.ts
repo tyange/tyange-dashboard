@@ -1,4 +1,4 @@
-import { compareAsc, differenceInCalendarWeeks, isValid, parse } from 'date-fns'
+import { compareAsc, differenceInCalendarWeeks, format, isValid, parse } from 'date-fns'
 
 export function weekKeyToDate(weekKey: string): Date | null {
   const parsed = parse(`${weekKey}-1`, "RRRR-'W'II-i", new Date())
@@ -25,4 +25,9 @@ export function getWeekTabLabel(
   if (diffWeeks === 0) return '이번 주'
   if (diffWeeks > 0) return `+${diffWeeks}주`
   return `${diffWeeks}주`
+}
+
+export function dateToWeekKey(date: Date): string | null {
+  if (!isValid(date)) return null
+  return format(date, "RRRR-'W'II")
 }

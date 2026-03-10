@@ -2,6 +2,7 @@ import type {
   ApiStatusResponse,
   BudgetRebalanceResponse,
   BudgetWeeksResponse,
+  CreateSpendingResponse,
   SpendingListResponse,
   WeeklyConfig,
   WeeklySpendRecord,
@@ -62,6 +63,65 @@ export async function fetchWeeklySpendRecords(weekKey: string): Promise<WeeklySp
 
   const payload = (await response.json()) as SpendingListResponse
   return payload.records ?? []
+}
+
+export async function createSpendRecord(amount: number, merchant: string | null, transactedAt: string): Promise<CreateSpendingResponse> {
+  const response = await fetch(`${apiBaseUrl}/budget/spending`, {
+    method: 'POST',
+    headers: createAuthorizedHeaders(getRequiredAccessToken(), {
+      'Content-Type': 'application/json',
+    }),
+    body: JSON.stringify({
+      amount,
+      merchant,
+      transacted_at: transactedAt,
+    }),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '소비 기록 저장 실패'}`)
+  }
+
+  return response.json()
+}
+
+export async function updateSpendRecord(
+  recordId: number,
+  amount: number,
+  merchant: string | null,
+  transactedAt: string,
+): Promise<WeeklySpendRecord> {
+  const response = await fetch(`${apiBaseUrl}/budget/spending/${recordId}`, {
+    method: 'PUT',
+    headers: createAuthorizedHeaders(getRequiredAccessToken(), {
+      'Content-Type': 'application/json',
+    }),
+    body: JSON.stringify({
+      amount,
+      merchant,
+      transacted_at: transactedAt,
+    }),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '소비 기록 수정 실패'}`)
+  }
+
+  return response.json()
+}
+
+export async function deleteSpendRecord(recordId: number): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/budget/spending/${recordId}`, {
+    method: 'DELETE',
+    headers: createAuthorizedHeaders(getRequiredAccessToken()),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '소비 기록 삭제 실패'}`)
+  }
 }
 
 export async function fetchWeeklyConfig(): Promise<WeeklyConfig> {

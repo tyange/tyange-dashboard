@@ -20,6 +20,14 @@ export type WeeklySpendRecord = {
   created_at: string
 }
 
+export type CreateSpendingResponse = {
+  record_id: number
+  weekly_total: number
+  weekly_limit: number
+  remaining: number
+  alert: boolean
+}
+
 export type BudgetWeeksResponse = {
   weeks: string[]
   min_week?: string | null

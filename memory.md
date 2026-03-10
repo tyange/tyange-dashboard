@@ -48,6 +48,7 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
 - `기록 수` 카드의 `더 보기` 버튼 is the primary UI entry into `/records?week={week_key}`
 - 소비 기록 페이지는 `week` query param을 공식 입력으로 받고 `GET /budget/spending?week={week_key}`로 조회
+- 소비 기록 페이지는 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id`를 사용해 인라인으로 생성/수정/삭제를 처리하며, 수정 결과 주차가 바뀌면 해당 `week` 화면으로 즉시 이동한다
 - Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
 - Budget dashboard and records routes treat `API 404` from budget endpoints as "예산 미등록" state and show a dedicated setup-required page instead of a generic error alert
 - Budget setup uses `GET /budget/weekly-config` to load the current week's config row and `POST /budget/set` to save current-week `weekly_limit` and `alert_threshold`
