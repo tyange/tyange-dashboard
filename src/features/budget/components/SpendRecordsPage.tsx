@@ -105,22 +105,25 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
     'w-full rounded-2xl border border-border bg-background/70 px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary'
   const allSelectableChecked = () =>
     props.selectableFingerprintCount > 0 && props.selectedFingerprints.length === props.selectableFingerprintCount
+  const hasSummary = () => props.fromDate !== '-' && props.toDate !== '-'
 
   return (
     <article aria-label="소비 기록 페이지" class="space-y-4">
-      <section class={card}>
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="text-sm font-medium text-foreground">{props.fromDate} ~ {props.toDate}</p>
-            <p class="mt-1 text-sm text-muted-foreground">
-              총 지출 {krwFormatter.format(props.totalSpent)} · 잔여 {krwFormatter.format(props.remainingBudget)}
-            </p>
+      <Show when={hasSummary()}>
+        <section class={card}>
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-medium text-foreground">{props.fromDate} ~ {props.toDate}</p>
+              <p class="mt-1 text-sm text-muted-foreground">
+                총 지출 {krwFormatter.format(props.totalSpent)} · 잔여 {krwFormatter.format(props.remainingBudget)}
+              </p>
+            </div>
+            <button type="button" class={mutedButton} onClick={props.onBack}>
+              대시보드로
+            </button>
           </div>
-          <button type="button" class={mutedButton} onClick={props.onBack}>
-            대시보드로
-          </button>
-        </div>
-      </section>
+        </section>
+      </Show>
 
       <section class={card}>
         <div class="flex flex-col gap-4">

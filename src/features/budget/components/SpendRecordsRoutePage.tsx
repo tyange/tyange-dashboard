@@ -126,7 +126,26 @@ export default function SpendRecordsRoutePage() {
     }
 
     try {
-      const [nextSummary, nextGroups] = await Promise.all([fetchBudgetSummary(), fetchSpendingGroups()])
+      const nextSummary = await fetchBudgetSummary()
+      let nextGroups: SpendingListResponse
+
+      try {
+        nextGroups = await fetchSpendingGroups()
+      } catch (error) {
+        if (isBudgetNotConfiguredError(error)) {
+          nextGroups = {
+            budget_id: nextSummary.budget_id,
+            from_date: nextSummary.from_date,
+            to_date: nextSummary.to_date,
+            total_spent: nextSummary.total_spent,
+            remaining: nextSummary.remaining_budget,
+            weeks: [],
+          }
+        } else {
+          throw error
+        }
+      }
+
       setSummary(nextSummary)
       setSpendingGroups(nextGroups)
     } catch (error) {
@@ -331,12 +350,16 @@ export default function SpendRecordsRoutePage() {
     }
   }
 
-  return requiresBudgetSetup() ? (
-    <BudgetSetupRequiredState
-      title="소비 기록을 보기 전에 예산을 등록해주세요."
-      description="활성 기간 예산이 아직 없어 소비 기록 범위를 계산할 수 없습니다. 기간 총예산을 먼저 생성한 뒤 다시 시도해주세요."
-    />
-  ) : (
+  if (requiresBudgetSetup()) {
+    return (
+      <BudgetSetupRequiredState
+        title="소비 기록을 보기 전에 예산을 등록해주세요."
+        description="활성 기간 예산이 아직 없어 소비 기록 범위를 계산할 수 없습니다. 기간 총예산을 먼저 생성한 뒤 다시 시도해주세요."
+      />
+    )
+  }
+
+  return (
     <SpendRecordsPage
       fromDate={spendingGroups()?.from_date ?? summary()?.from_date ?? '-'}
       toDate={spendingGroups()?.to_date ?? summary()?.to_date ?? '-'}
