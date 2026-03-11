@@ -35,7 +35,7 @@ function getSaveErrorMessage(error: unknown) {
   }
 
   if (status === 404) {
-    return '활성 예산이 없거나 수정할 예산을 찾지 못했습니다.'
+    return '현재 예산이 없거나 수정할 예산을 찾지 못했습니다.'
   }
 
   return (error as Error).message
@@ -67,7 +67,7 @@ type MoneyFieldProps = {
 function MoneyField(props: MoneyFieldProps) {
   return (
     <TextField class="block">
-      <TextField.Label class="mb-2 block text-sm font-medium text-foreground">{props.label}</TextField.Label>
+      <TextField.Label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">{props.label}</TextField.Label>
       <TextField.Input
         type="text"
         inputmode="numeric"
@@ -75,11 +75,11 @@ function MoneyField(props: MoneyFieldProps) {
         value={props.value}
         disabled={props.disabled}
         onInput={(event) => props.onInput(digitsOnly(event.currentTarget.value))}
-        class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-70"
+        class="w-full rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-white/28 focus:border-accent/55 disabled:cursor-not-allowed disabled:opacity-70"
         placeholder={props.placeholder}
       />
       <Show when={props.description}>
-        {(description) => <TextField.Description class="mt-2 text-xs text-muted-foreground">{description()}</TextField.Description>}
+        {(description) => <TextField.Description class="mt-2 text-xs text-white/44">{description()}</TextField.Description>}
       </Show>
     </TextField>
   )
@@ -93,7 +93,7 @@ type PercentFieldProps = {
 function PercentField(props: PercentFieldProps) {
   return (
     <TextField class="block">
-      <TextField.Label class="mb-2 block text-sm font-medium text-foreground">알림 기준 (%)</TextField.Label>
+      <TextField.Label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">알림 기준 (%)</TextField.Label>
       <TextField.Input
         type="number"
         min="0"
@@ -102,10 +102,10 @@ function PercentField(props: PercentFieldProps) {
         inputmode="numeric"
         value={props.value}
         onInput={(event) => props.onInput(event.currentTarget.value)}
-        class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
+        class="w-full rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-white/28 focus:border-accent/55"
         placeholder="예: 85"
       />
-      <TextField.Description class="mt-2 text-xs text-muted-foreground">
+      <TextField.Description class="mt-2 text-xs text-white/44">
         사용률이 이 값을 넘기면 경고 상태로 표시됩니다.
       </TextField.Description>
     </TextField>
@@ -121,11 +121,11 @@ type DateFieldProps = {
 
 function DateField(props: DateFieldProps) {
   const inputClass =
-    'w-full rounded-2xl border border-border bg-background/70 px-4 py-3 pr-14 text-sm text-foreground outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-70'
+    'w-full rounded-2xl border border-white/8 bg-white/4 px-4 py-3 pr-14 text-sm text-foreground outline-none transition placeholder:text-white/28 focus:border-accent/55 disabled:cursor-not-allowed disabled:opacity-70'
 
   return (
     <TextField class="block">
-      <TextField.Label class="mb-2 block text-sm font-medium text-foreground">{props.label}</TextField.Label>
+      <TextField.Label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">{props.label}</TextField.Label>
       <Popover placement="bottom-end">
         <div class="relative">
           <TextField.Input
@@ -260,7 +260,7 @@ export default function BudgetSetupPage() {
           setAlertThresholdInput(String(toThresholdPercent(updatedBudget.alert_threshold)))
         }
 
-        setSuccessMessage(result.message ?? '현재 활성 기간 예산을 수정했습니다.')
+        setSuccessMessage(result.message ?? '현재 적용 예산을 수정했습니다.')
       } else {
         const result = await createBudgetPlan({
           total_budget: totalBudget,
@@ -279,22 +279,22 @@ export default function BudgetSetupPage() {
     }
   }
 
-  const card = 'rounded-xl border border-border bg-card p-5 shadow-[0_10px_24px_rgba(2,6,23,0.22)]'
+  const panel = 'rounded-[1.75rem] border border-white/8 bg-black/28 p-6 shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur-xl'
+  const accentPanel = 'rounded-[1.75rem] border border-emerald-500/22 bg-[linear-gradient(180deg,rgba(4,20,17,0.92),rgba(4,10,14,0.94))] p-6 shadow-[0_18px_44px_rgba(0,0,0,0.24)]'
   const buttonClass =
-    'inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
   const secondaryButton =
-    'inline-flex items-center justify-center rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted'
+    'inline-flex items-center justify-center rounded-full border border-white/8 bg-white/4 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/8 hover:text-white'
 
   return (
-    <article aria-label="예산 설정 페이지" class="space-y-4">
-      <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <article aria-label="예산 설정 페이지" class="space-y-5">
+      <header class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight text-foreground">예산 설정</h1>
-          <p class="mt-1 text-sm text-muted-foreground">
-            활성 기간 예산을 생성하거나 수정합니다.
-          </p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Budget Setup</p>
+          <h1 class="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">예산 설정</h1>
+          <p class="mt-3 text-base text-muted-foreground">적용 기간 총예산과 경고 기준을 정리합니다.</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <button type="button" class={secondaryButton} onClick={() => void navigate('/dashboard')}>
             대시보드로
           </button>
@@ -306,7 +306,7 @@ export default function BudgetSetupPage() {
 
       <Show when={errorMessage()}>
         {(message) => (
-          <div class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div class="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {message()}
           </div>
         )}
@@ -314,64 +314,107 @@ export default function BudgetSetupPage() {
 
       <Show when={successMessage()}>
         {(message) => (
-          <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          <div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
             {message()}
           </div>
         )}
       </Show>
 
-      <section class={card}>
-        <div>
-          <h2 class="text-lg font-semibold text-foreground">활성 기간 예산 저장</h2>
-          <p class="mt-1 text-sm text-muted-foreground">
-            활성 기간 총예산과 알림 기준을 직접 저장합니다.
-          </p>
-        </div>
+      <Show when={activeBudget()}>
+        {(summary) => (
+          <section class={panel}>
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p class="text-lg font-medium text-white/48">현재 예산</p>
+                <p class="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+                  {summary().from_date} ~ {summary().to_date}
+                </p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-3">
+                <div class="rounded-2xl bg-white/4 px-4 py-3">
+                  <p class="text-xs uppercase tracking-[0.16em] text-white/40">총예산</p>
+                  <p class="mt-2 text-xl font-semibold text-foreground">{krwFormatter.format(summary().total_budget)}</p>
+                </div>
+                <div class="rounded-2xl bg-white/4 px-4 py-3">
+                  <p class="text-xs uppercase tracking-[0.16em] text-white/40">총지출</p>
+                  <p class="mt-2 text-xl font-semibold text-foreground">{krwFormatter.format(summary().total_spent)}</p>
+                </div>
+                <div class="rounded-2xl bg-white/4 px-4 py-3">
+                  <p class="text-xs uppercase tracking-[0.16em] text-white/40">잔여</p>
+                  <p class="mt-2 text-xl font-semibold text-foreground">{krwFormatter.format(summary().remaining_budget)}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </Show>
 
-        <div class="mt-5 grid gap-3 md:grid-cols-2">
-          <MoneyField
-            label="총예산"
-            value={saveTotalBudgetInput()}
-            onInput={setSaveTotalBudgetInput}
-            placeholder="예: 450000"
-            description="총지출은 거래 원장에서 자동 계산됩니다."
-          />
-          <DateField
-            label="시작일"
-            value={saveFromDateInput()}
-            onInput={setSaveFromDateInput}
-            disabled={hasActiveBudget()}
-          />
-          <DateField
-            label="종료일"
-            value={saveToDateInput()}
-            onInput={setSaveToDateInput}
-            disabled={hasActiveBudget()}
-          />
-        </div>
-
-        <div class="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-          <PercentField value={alertThresholdInput()} onInput={setAlertThresholdInput} />
-          <div class="flex items-end">
-            <button type="button" class={`${buttonClass} w-full md:w-auto`} disabled={saving()} onClick={() => void submitBudget()}>
-              {saving() ? '저장 중...' : hasActiveBudget() ? '활성 예산 수정' : '예산 생성'}
-            </button>
+      <section class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section class={accentPanel}>
+          <div>
+            <p class="text-lg font-medium text-white/48">현재 적용 예산 저장</p>
+            <h2 class="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+              {hasActiveBudget() ? '현재 예산 수정' : '새 예산 생성'}
+            </h2>
+            <p class="mt-3 text-sm text-white/52">기존 API 흐름은 유지하고, 총지출은 거래 원장에서 자동 계산됩니다.</p>
           </div>
-        </div>
 
-        <Show when={activeBudget()}>
-          {(summary) => (
-            <div class="mt-5 rounded-2xl border border-border/80 bg-secondary/20 p-4">
-              <p class="text-sm font-semibold text-foreground">현재 활성 예산</p>
-              <p class="mt-2 text-sm text-muted-foreground">
-                기간 {summary().from_date} ~ {summary().to_date}
-              </p>
-              <p class="mt-1 text-sm text-muted-foreground">
-                총예산 {krwFormatter.format(summary().total_budget)} · 총지출 {krwFormatter.format(summary().total_spent)} · 잔여 {krwFormatter.format(summary().remaining_budget)}
+          <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <MoneyField
+              label="총예산"
+              value={saveTotalBudgetInput()}
+              onInput={setSaveTotalBudgetInput}
+              placeholder="예: 450000"
+              description="총지출은 거래 원장에서 자동 계산됩니다."
+            />
+            <PercentField value={alertThresholdInput()} onInput={setAlertThresholdInput} />
+            <DateField
+              label="시작일"
+              value={saveFromDateInput()}
+              onInput={setSaveFromDateInput}
+              disabled={hasActiveBudget()}
+            />
+            <DateField
+              label="종료일"
+              value={saveToDateInput()}
+              onInput={setSaveToDateInput}
+              disabled={hasActiveBudget()}
+            />
+          </div>
+
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button type="button" class={buttonClass} disabled={saving()} onClick={() => void submitBudget()}>
+              {saving() ? '저장 중...' : hasActiveBudget() ? '현재 예산 수정' : '예산 생성'}
+            </button>
+            <span class="text-sm text-white/46">
+              {hasActiveBudget() ? '적용 기간은 고정되며 총예산과 알림 기준만 수정합니다.' : '처음 생성할 때만 시작일과 종료일을 입력합니다.'}
+            </span>
+          </div>
+        </section>
+
+        <aside class={panel}>
+          <p class="text-lg font-medium text-white/48">설정 요약</p>
+          <div class="mt-5 space-y-3">
+            <div class="rounded-2xl bg-white/4 px-4 py-4">
+              <p class="text-xs uppercase tracking-[0.16em] text-white/40">입력 총예산</p>
+              <p class="mt-2 text-2xl font-semibold text-foreground">
+                {saveTotalBudgetInput() ? krwFormatter.format(Number(saveTotalBudgetInput())) : '-'}
               </p>
             </div>
-          )}
-        </Show>
+            <div class="rounded-2xl bg-white/4 px-4 py-4">
+              <p class="text-xs uppercase tracking-[0.16em] text-white/40">알림 기준</p>
+              <p class="mt-2 text-2xl font-semibold text-foreground">
+                {alertThresholdInput() || '0'}%
+              </p>
+            </div>
+            <div class="rounded-2xl bg-white/4 px-4 py-4">
+              <p class="text-xs uppercase tracking-[0.16em] text-white/40">기간</p>
+              <p class="mt-2 text-lg font-semibold text-foreground">
+                {saveFromDateInput() || '-'} ~ {saveToDateInput() || '-'}
+              </p>
+            </div>
+          </div>
+        </aside>
       </section>
     </article>
   )

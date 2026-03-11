@@ -32,7 +32,7 @@ function getPreviewErrorMessage(error: unknown) {
   }
 
   if (status === 404) {
-    return '활성 예산이 없어 가져오기를 진행할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
+    return '현재 예산이 없어 가져오기를 진행할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
   }
 
   if (status === 400) {
@@ -51,7 +51,7 @@ function getCommitErrorMessage(error: unknown) {
   }
 
   if (status === 404) {
-    return '활성 예산이 없어 가져오기를 반영할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
+    return '현재 예산이 없어 가져오기를 반영할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
   }
 
   if (status === 409) {
@@ -73,7 +73,7 @@ function getMutationErrorMessage(error: unknown) {
   }
 
   if (status === 404) {
-    return '활성 예산이 없거나 수정할 소비 기록을 찾지 못했습니다.'
+    return '현재 예산이 없거나 수정할 소비 기록을 찾지 못했습니다.'
   }
 
   return (error as Error).message
@@ -383,7 +383,7 @@ export default function SpendRecordsRoutePage() {
     return (
       <BudgetSetupRequiredState
         title="소비 기록을 보기 전에 예산을 등록해주세요."
-        description="활성 기간 예산이 아직 없어 소비 기록 범위를 계산할 수 없습니다. 기간 총예산을 먼저 생성한 뒤 다시 시도해주세요."
+        description="현재 적용 예산이 아직 없어 소비 기록 범위를 계산할 수 없습니다. 기간 총예산을 먼저 생성한 뒤 다시 시도해주세요."
       />
     )
   }

@@ -9,28 +9,26 @@ export default function BudgetSetupRequiredState(props: BudgetSetupRequiredState
   return (
     <section
       aria-label="예산 등록 필요 안내"
-      class="rounded-xl border border-border bg-card p-6 shadow-[0_10px_24px_rgba(2,6,23,0.22)]"
+      class="overflow-hidden rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7 shadow-[0_18px_44px_rgba(2,6,23,0.28)]"
     >
-      <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Budget Setup</p>
-      <h2 class="mt-3 text-xl font-semibold text-foreground">{props.title ?? '활성 예산을 먼저 등록해주세요.'}</h2>
-      <p class="mt-2 text-sm leading-6 text-muted-foreground">
-        {props.description ?? '현재 활성 기간 예산이 없습니다. 설정 페이지에서 기간 총예산을 생성하거나 계산 결과를 검토한 뒤 직접 저장해주세요.'}
+      <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Budget Setup</p>
+      <h2 class="mt-4 text-2xl font-semibold tracking-tight text-foreground">{props.title ?? '현재 예산을 먼저 등록해주세요.'}</h2>
+      <p class="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+        {props.description ?? '현재 적용 예산이 없습니다. 설정 페이지에서 기간 총예산을 생성하거나 계산 결과를 검토한 뒤 직접 저장해주세요.'}
       </p>
-      <div class="mt-5">
-        <div class="flex flex-wrap items-center gap-3">
+      <div class="mt-7 flex flex-wrap items-center gap-3">
           <A
             href="/budget/setup"
-            class="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:-translate-y-0.5"
+            class="inline-flex items-center justify-center rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-foreground transition hover:-translate-y-0.5"
           >
             예산 등록하기
           </A>
           <A
             href="/"
-            class="inline-flex items-center justify-center rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
+            class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/4 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-white/8"
           >
             메인으로
           </A>
-        </div>
       </div>
     </section>
   )

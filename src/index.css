@@ -62,11 +62,20 @@ body,
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, color-mix(in oklab, var(--accent) 12%, transparent) 0%, transparent 34%),
+    radial-gradient(circle at top right, color-mix(in oklab, var(--primary) 14%, transparent) 0%, transparent 28%),
+    linear-gradient(180deg, oklch(0.11 0.01 260) 0%, var(--background) 22%, oklch(0.1 0.01 260) 100%);
+  background-attachment: fixed;
   color: var(--foreground);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 45%, black);
+  color: white;
 }

@@ -66,8 +66,8 @@ export default function BudgetDashboardPage() {
     <section aria-label="Dashboard">
       {requiresBudgetSetup() && (
         <BudgetSetupRequiredState
-          title="활성 예산을 먼저 등록해주세요."
-          description="현재 활성 기간 예산이 없습니다. 예산 설정 화면에서 기간 총예산을 생성하거나 엑셀 계산 결과를 검토한 뒤 직접 저장해주세요."
+          title="현재 예산을 먼저 등록해주세요."
+          description="현재 적용 예산이 없습니다. 예산 설정 화면에서 기간 총예산을 생성하거나 엑셀 계산 결과를 검토한 뒤 직접 저장해주세요."
         />
       )}
 
@@ -79,7 +79,7 @@ export default function BudgetDashboardPage() {
 
       {!requiresBudgetSetup() && (
         <WeeklyBudgetCard
-          title="활성 기간 예산"
+          title="현재 적용 예산"
           summary={summary() ?? emptySummary}
           loading={loading()}
           onRefresh={() => void refreshSummary()}

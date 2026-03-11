@@ -57,6 +57,8 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - 예산/소비 관련 404는 기본적으로 "활성 기간 예산 없음" 또는 "기록 없음" 메시지로 처리하고 예산 설정 유도 화면을 노출한다
 - 엑셀 계산 플로우는 업로드/계산, 버킷 검토, 활성 기간 예산 저장의 3단계를 명확히 분리한다
 - 401은 세션 만료 메시지, 404는 활성 예산/기록 없음 메시지, 400 엑셀 계산 오류는 파일/입력값 오류 메시지로 매핑한다
+- 예산 기능 UI는 반복 카드보다 `hero panel + metric tiles + compact control panel` 패턴을 우선 사용하고, 다크 배경 위 초록/적색 상태 포인트를 예산 도메인 한정으로 적극 사용한다
+- 사용자 노출 문구에서는 `활성`보다 `현재` 또는 `적용` 표현을 우선 사용한다
 
 ## Data Contracts (Budget)
 - `BudgetSummary`: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`, optional `is_overspent`
