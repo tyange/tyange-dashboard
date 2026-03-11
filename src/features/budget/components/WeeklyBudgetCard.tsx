@@ -16,7 +16,10 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
     'h-9 min-w-9 rounded-lg border border-border bg-secondary px-3 text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-45'
   const viewMoreButton =
     'group inline-flex h-8 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 text-[11px] font-semibold tracking-[0.01em] text-primary transition-all hover:border-primary/35 hover:bg-primary/16 hover:text-primary'
-  const remainingTone = props.summary.remaining_budget < 0 ? 'text-destructive' : 'text-foreground'
+  const overspent = () => props.summary.is_overspent ?? props.summary.remaining_budget < 0
+  const remainingTone = overspent() ? 'text-destructive' : 'text-foreground'
+  const statusTone = () => (overspent() ? 'bg-destructive/15 text-destructive' : props.summary.alert ? 'bg-amber-500/15 text-amber-200' : 'bg-emerald-500/15 text-emerald-200')
+  const statusLabel = () => (overspent() ? '예산 초과' : props.summary.alert ? '경고' : '정상')
 
   return (
     <article id="active-budget">
@@ -38,9 +41,12 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
       <section class={`${metaCard} mb-6 overflow-hidden`}>
         <div class="mb-6 flex items-center justify-between">
           <span class="text-sm font-medium text-muted-foreground">남은 예산</span>
-          <span class="rounded-full bg-primary/12 px-3 py-1 text-xs font-medium text-primary">
-            사용률 {props.usagePercent.toFixed(1)}%
-          </span>
+          <div class="flex items-center gap-2">
+            <span class={`rounded-full px-3 py-1 text-xs font-medium ${statusTone()}`}>{statusLabel()}</span>
+            <span class="rounded-full bg-primary/12 px-3 py-1 text-xs font-medium text-primary">
+              사용률 {props.usagePercent.toFixed(1)}%
+            </span>
+          </div>
         </div>
         <div class="mb-6">
           <span class={`text-4xl font-bold tracking-tight md:text-5xl ${remainingTone}`}>
@@ -58,6 +64,8 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
               style={{ width: `${props.usagePercent}%` }}
             />
           </div>
+          {overspent() && <p class="text-sm font-medium text-destructive">예산 초과 상태입니다. 남은 예산이 음수로 집계되었습니다.</p>}
+          {!overspent() && props.summary.alert && <p class="text-sm font-medium text-amber-200">알림 기준에 도달했습니다.</p>}
         </div>
       </section>
 
@@ -87,7 +95,8 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
               </svg>
             </button>
           </div>
-          <p class="mt-1 text-xl font-semibold text-foreground">week 그룹 보기</p>
+          <p class="mt-1 text-xl font-semibold text-foreground">기록 목록 보기</p>
+          <p class="mt-1 text-xs text-muted-foreground">주차 그룹은 표시용이며 계산은 전체 기간 총액 기준입니다.</p>
         </div>
         <div class={metaCard}>
           <p class="text-sm text-muted-foreground">총 지출</p>

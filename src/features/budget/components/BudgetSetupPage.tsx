@@ -1,10 +1,10 @@
 import { Popover } from '@kobalte/core/popover'
 import { TextField } from '@kobalte/core/text-field'
 import { useNavigate } from '@solidjs/router'
-import { Show, createSignal, onMount } from 'solid-js'
-import { createBudgetPlan, fetchBudgetSummary, rebalanceBudget } from '../api'
+import { Show, createMemo, createSignal, onMount } from 'solid-js'
+import { createBudgetPlan, fetchBudgetSummary, updateBudget } from '../api'
 import { krwFormatter } from '../format'
-import type { BudgetRebalanceResponse } from '../types'
+import type { BudgetSummary } from '../types'
 
 function toThresholdPercent(value: number) {
   return Math.round(value * 100)
@@ -32,6 +32,11 @@ function dateInputOnly(value: string) {
   return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`
 }
 
+function isOverspent(summary: Pick<BudgetSummary, 'remaining_budget' | 'is_overspent'> | null) {
+  if (!summary) return false
+  return summary.is_overspent ?? summary.remaining_budget < 0
+}
+
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" class="h-4 w-4">
@@ -52,6 +57,7 @@ type MoneyFieldProps = {
   value: string
   placeholder: string
   onInput: (value: string) => void
+  description?: string
 }
 
 function MoneyField(props: MoneyFieldProps) {
@@ -67,6 +73,9 @@ function MoneyField(props: MoneyFieldProps) {
         class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
         placeholder={props.placeholder}
       />
+      <Show when={props.description}>
+        {(description) => <TextField.Description class="mt-2 text-xs text-muted-foreground">{description()}</TextField.Description>}
+      </Show>
     </TextField>
   )
 }
@@ -160,35 +169,27 @@ function DateField(props: DateFieldProps) {
 export default function BudgetSetupPage() {
   const navigate = useNavigate()
   const [hasActiveBudget, setHasActiveBudget] = createSignal(false)
-  const [planTotalBudgetInput, setPlanTotalBudgetInput] = createSignal('')
-  const [planFromDateInput, setPlanFromDateInput] = createSignal('')
-  const [planToDateInput, setPlanToDateInput] = createSignal('')
+  const [activeBudget, setActiveBudget] = createSignal<BudgetSummary | null>(null)
+  const [totalBudgetInput, setTotalBudgetInput] = createSignal('')
+  const [totalSpentInput, setTotalSpentInput] = createSignal('')
+  const [fromDateInput, setFromDateInput] = createSignal('')
+  const [toDateInput, setToDateInput] = createSignal('')
   const [alertThresholdInput, setAlertThresholdInput] = createSignal('85')
-  const [rebalanceTotalBudgetInput, setRebalanceTotalBudgetInput] = createSignal('')
-  const [rebalanceSpentSoFarInput, setRebalanceSpentSoFarInput] = createSignal('')
-  const [rebalanceFromDateInput, setRebalanceFromDateInput] = createSignal('')
-  const [rebalanceToDateInput, setRebalanceToDateInput] = createSignal('')
-  const [rebalanceAsOfDateInput, setRebalanceAsOfDateInput] = createSignal(formatDateInput(new Date()))
   const [loading, setLoading] = createSignal(true)
   const [saving, setSaving] = createSignal(false)
-  const [rebalancing, setRebalancing] = createSignal(false)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null)
-  const [rebalanceErrorMessage, setRebalanceErrorMessage] = createSignal<string | null>(null)
-  const [rebalanceSuccessMessage, setRebalanceSuccessMessage] = createSignal<string | null>(null)
-  const [rebalanceResult, setRebalanceResult] = createSignal<BudgetRebalanceResponse | null>(null)
 
   onMount(() => {
     void fetchBudgetSummary()
       .then((summary) => {
         setHasActiveBudget(true)
-        setPlanTotalBudgetInput(String(summary.total_budget))
-        setPlanFromDateInput(summary.from_date)
-        setPlanToDateInput(summary.to_date)
+        setActiveBudget(summary)
+        setTotalBudgetInput(String(summary.total_budget))
+        setTotalSpentInput(String(summary.total_spent))
+        setFromDateInput(summary.from_date)
+        setToDateInput(summary.to_date)
         setAlertThresholdInput(String(toThresholdPercent(summary.alert_threshold)))
-        setRebalanceTotalBudgetInput(String(summary.total_budget))
-        setRebalanceFromDateInput(summary.from_date)
-        setRebalanceToDateInput(summary.to_date)
       })
       .catch((error) => {
         if ((error as Error).message.startsWith('API 404:')) {
@@ -202,22 +203,18 @@ export default function BudgetSetupPage() {
       })
   })
 
-  const submitBudgetSetup = async () => {
+  const submitBudget = async () => {
     if (saving()) return
 
-    const totalBudget = Number(planTotalBudgetInput())
+    const totalBudget = Number(totalBudgetInput())
+    const totalSpentValue = totalSpentInput().trim()
+    const totalSpent = totalSpentValue === '' ? undefined : Number(totalSpentValue)
     const alertThresholdPercent = Number(alertThresholdInput())
-    const fromDate = planFromDateInput().trim()
-    const toDate = planToDateInput().trim()
+    const fromDate = fromDateInput().trim()
+    const toDate = toDateInput().trim()
 
     if (!Number.isFinite(totalBudget) || totalBudget <= 0) {
       setErrorMessage('총예산은 0보다 큰 숫자로 입력해주세요.')
-      setSuccessMessage(null)
-      return
-    }
-
-    if (!fromDate || !toDate) {
-      setErrorMessage('시작일과 종료일을 모두 입력해주세요.')
       setSuccessMessage(null)
       return
     }
@@ -228,14 +225,60 @@ export default function BudgetSetupPage() {
       return
     }
 
+    if (totalSpent !== undefined && (!Number.isFinite(totalSpent) || totalSpent < 0)) {
+      setErrorMessage('현재까지 지출 총액은 0 이상의 숫자로 입력해주세요.')
+      setSuccessMessage(null)
+      return
+    }
+
+    if (!hasActiveBudget() && (!fromDate || !toDate)) {
+      setErrorMessage('시작일과 종료일을 모두 입력해주세요.')
+      setSuccessMessage(null)
+      return
+    }
+
+    if (!hasActiveBudget() && fromDate > toDate) {
+      setErrorMessage('시작일은 종료일보다 늦을 수 없습니다.')
+      setSuccessMessage(null)
+      return
+    }
+
     setSaving(true)
     setErrorMessage(null)
     setSuccessMessage(null)
 
     try {
-      const result = await createBudgetPlan(totalBudget, fromDate, toDate, toThresholdRatio(alertThresholdPercent))
-      setSuccessMessage(result.message ?? '예산을 생성했습니다.')
-      void navigate('/dashboard', { replace: true })
+      const alertThreshold = toThresholdRatio(alertThresholdPercent)
+
+      if (hasActiveBudget()) {
+        const result = await updateBudget({
+          total_budget: totalBudget,
+          total_spent: totalSpent,
+          alert_threshold: alertThreshold,
+        })
+        const updatedBudget = result.data ?? null
+
+        if (updatedBudget) {
+          setActiveBudget(updatedBudget)
+          setTotalBudgetInput(String(updatedBudget.total_budget))
+          setTotalSpentInput(String(updatedBudget.total_spent))
+          setFromDateInput(updatedBudget.from_date)
+          setToDateInput(updatedBudget.to_date)
+          setAlertThresholdInput(String(toThresholdPercent(updatedBudget.alert_threshold)))
+        }
+
+        setSuccessMessage(result.message ?? '현재 활성 기간 예산을 수정했습니다.')
+      } else {
+        const result = await createBudgetPlan({
+          total_budget: totalBudget,
+          from_date: fromDate,
+          to_date: toDate,
+          total_spent: totalSpent,
+          alert_threshold: alertThreshold,
+        })
+        setSuccessMessage(result.message ?? '예산을 생성했습니다.')
+        void navigate('/dashboard', { replace: true })
+      }
     } catch (error) {
       setErrorMessage((error as Error).message)
     } finally {
@@ -243,249 +286,141 @@ export default function BudgetSetupPage() {
     }
   }
 
-  const submitRebalance = async () => {
-    if (rebalancing()) return
-
-    const totalBudget = Number(rebalanceTotalBudgetInput())
-    const spentSoFarRaw = rebalanceSpentSoFarInput().trim()
-    const alertThresholdPercent = Number(alertThresholdInput())
-    const fromDate = rebalanceFromDateInput().trim()
-    const toDate = rebalanceToDateInput().trim()
-    const asOfDate = rebalanceAsOfDateInput().trim()
-    const spentSoFar = spentSoFarRaw === '' ? undefined : Number(spentSoFarRaw)
-
-    if (!Number.isFinite(totalBudget) || totalBudget <= 0) {
-      setRebalanceErrorMessage('총예산은 0보다 큰 숫자로 입력해주세요.')
-      setRebalanceSuccessMessage(null)
-      return
-    }
-
-    if (!fromDate || !toDate || !asOfDate) {
-      setRebalanceErrorMessage('시작일, 종료일, 재계산 기준일을 모두 입력해주세요.')
-      setRebalanceSuccessMessage(null)
-      return
-    }
-
-    if (spentSoFarRaw !== '' && (spentSoFar === undefined || !Number.isFinite(spentSoFar) || spentSoFar < 0)) {
-      setRebalanceErrorMessage('누적 소비는 0 이상의 숫자로 입력해주세요.')
-      setRebalanceSuccessMessage(null)
-      return
-    }
-
-    if (!Number.isFinite(alertThresholdPercent) || alertThresholdPercent < 0 || alertThresholdPercent > 100) {
-      setRebalanceErrorMessage('알림 기준은 0에서 100 사이의 숫자로 입력해주세요.')
-      setRebalanceSuccessMessage(null)
-      return
-    }
-
-    setRebalancing(true)
-    setRebalanceErrorMessage(null)
-    setRebalanceSuccessMessage(null)
-    setRebalanceResult(null)
-
-    try {
-      const result = await rebalanceBudget(
-        totalBudget,
-        fromDate,
-        toDate,
-        asOfDate,
-        toThresholdRatio(alertThresholdPercent),
-        spentSoFar,
-      )
-
-      setRebalanceResult(result.data ?? null)
-      setRebalanceSuccessMessage(result.message ?? '예산을 재계산했습니다.')
-    } catch (error) {
-      setRebalanceErrorMessage((error as Error).message)
-    } finally {
-      setRebalancing(false)
-    }
-  }
-
   const panelClass = 'rounded-xl border border-border bg-card p-5 shadow-[0_10px_24px_rgba(2,6,23,0.22)]'
+  const visibleBudget = createMemo(() => activeBudget())
+  const overspentVisible = createMemo(() => isOverspent(visibleBudget()))
 
   return (
     <article aria-label="예산 설정 페이지">
       <header class="mb-8">
         <h1 class="text-2xl font-semibold tracking-tight text-foreground">예산 설정</h1>
         <p class="mt-1 text-sm text-muted-foreground">
-          기간 총예산을 생성하거나 현재 활성 기간 기준으로 예산을 재계산할 수 있습니다.
+          활성 기간 예산이 있으면 총액을 수정하고, 없으면 새 기간 총예산을 생성합니다.
         </p>
       </header>
 
-      <div class="space-y-6">
-        <section class={panelClass}>
-          <Show when={!loading()} fallback={<p class="text-sm text-muted-foreground">예산 설정을 불러오는 중...</p>}>
-            <div class="mb-6 flex items-center justify-between">
-              <div>
-                <p class="text-sm text-muted-foreground">{hasActiveBudget() ? '현재 활성 예산' : '새 예산 생성'}</p>
-                <p class="mt-1 text-xl font-semibold text-foreground">
-                  {hasActiveBudget() ? '활성 기간 예산이 있습니다' : '활성 예산이 없습니다'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void navigate('/dashboard')}
-                class="inline-flex items-center rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
-              >
-                취소
-              </button>
+      <section class={panelClass}>
+        <Show when={!loading()} fallback={<p class="text-sm text-muted-foreground">예산 설정을 불러오는 중...</p>}>
+          <div class="mb-6 flex items-center justify-between">
+            <div>
+              <p class="text-sm text-muted-foreground">{hasActiveBudget() ? '현재 활성 예산' : '새 예산 생성'}</p>
+              <p class="mt-1 text-xl font-semibold text-foreground">
+                {hasActiveBudget() ? '활성 기간 예산 총액 수정' : '활성 예산이 없습니다'}
+              </p>
             </div>
-
-            <form
-              class="space-y-5"
-              onSubmit={async (event) => {
-                event.preventDefault()
-                await submitBudgetSetup()
-              }}
+            <button
+              type="button"
+              onClick={() => void navigate('/dashboard')}
+              class="inline-flex items-center rounded-full border border-border bg-secondary px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
             >
-              <MoneyField
-                label="총예산"
-                value={planTotalBudgetInput()}
-                onInput={setPlanTotalBudgetInput}
-                placeholder="예: 2500000"
-              />
-
-              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <DateField label="시작일" value={planFromDateInput()} onInput={setPlanFromDateInput} />
-                <DateField label="종료일" value={planToDateInput()} onInput={setPlanToDateInput} />
-              </div>
-
-              <PercentField value={alertThresholdInput()} onInput={setAlertThresholdInput} />
-
-              <Show when={errorMessage()}>
-                {(message) => (
-                  <div class="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-                    {message()}
-                  </div>
-                )}
-              </Show>
-              <Show when={successMessage()}>
-                {(message) => (
-                  <div class="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-                    {message()}
-                  </div>
-                )}
-              </Show>
-
-              <div class="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saving()}
-                  class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving() ? '저장 중...' : hasActiveBudget() ? '활성 예산 다시 생성' : '활성 예산 생성'}
-                </button>
-              </div>
-            </form>
-          </Show>
-        </section>
-
-        <section class={panelClass}>
-          <div class="mb-6">
-            <h2 class="text-xl font-semibold tracking-tight text-foreground">예산 재계산</h2>
-            <p class="mt-1 text-sm text-muted-foreground">
-              실제 소비를 반영해 현재 활성 기간 총예산을 다시 계산합니다.
-            </p>
+              취소
+            </button>
           </div>
+
+          <Show when={hasActiveBudget() && visibleBudget()}>
+            {(budget) => (
+              <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div class="rounded-2xl border border-border bg-background/60 p-4">
+                  <p class="text-sm text-muted-foreground">활성 기간</p>
+                  <p class="mt-1 text-lg font-semibold text-foreground">
+                    {budget().from_date} ~ {budget().to_date}
+                  </p>
+                </div>
+                <div class="rounded-2xl border border-border bg-background/60 p-4">
+                  <p class="text-sm text-muted-foreground">총 지출</p>
+                  <p class="mt-1 text-lg font-semibold text-foreground">{krwFormatter.format(budget().total_spent)}</p>
+                </div>
+                <div class="rounded-2xl border border-border bg-background/60 p-4">
+                  <p class="text-sm text-muted-foreground">남은 총예산</p>
+                  <p class={`mt-1 text-lg font-semibold ${overspentVisible() ? 'text-destructive' : 'text-foreground'}`}>
+                    {krwFormatter.format(budget().remaining_budget)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </Show>
 
           <form
             class="space-y-5"
             onSubmit={async (event) => {
               event.preventDefault()
-              await submitRebalance()
+              await submitBudget()
             }}
           >
             <MoneyField
-              label="기간 총예산"
-              value={rebalanceTotalBudgetInput()}
-              onInput={setRebalanceTotalBudgetInput}
+              label={hasActiveBudget() ? '예산 총액 수정' : '총예산'}
+              value={totalBudgetInput()}
+              onInput={setTotalBudgetInput}
               placeholder="예: 2500000"
             />
 
             <MoneyField
-              label="누적 소비 (선택)"
-              value={rebalanceSpentSoFarInput()}
-              onInput={setRebalanceSpentSoFarInput}
-              placeholder="비워두면 소비 기록 기준으로 자동 계산"
+              label="현재까지 지출 총액"
+              value={totalSpentInput()}
+              onInput={setTotalSpentInput}
+              placeholder="예: 400000"
+              description="이 값은 현재 budget 요약에 반영되는 누적 지출값입니다."
             />
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <DateField label="시작일" value={rebalanceFromDateInput()} onInput={setRebalanceFromDateInput} />
-              <DateField label="종료일" value={rebalanceToDateInput()} onInput={setRebalanceToDateInput} />
-              <DateField label="재계산 기준일" value={rebalanceAsOfDateInput()} onInput={setRebalanceAsOfDateInput} />
-            </div>
+            <Show
+              when={!hasActiveBudget()}
+              fallback={
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div class="rounded-2xl border border-border bg-background/60 p-4">
+                    <p class="text-sm text-muted-foreground">활성 기간 시작일</p>
+                    <p class="mt-1 text-lg font-semibold text-foreground">{fromDateInput() || '-'}</p>
+                  </div>
+                  <div class="rounded-2xl border border-border bg-background/60 p-4">
+                    <p class="text-sm text-muted-foreground">활성 기간 종료일</p>
+                    <p class="mt-1 text-lg font-semibold text-foreground">{toDateInput() || '-'}</p>
+                  </div>
+                  <div class="md:col-span-2 rounded-2xl border border-border bg-background/40 p-4">
+                    <p class="text-sm text-muted-foreground">기간 안내</p>
+                    <p class="mt-1 text-sm text-foreground">현재 활성 예산 수정에서는 기간을 바꿀 수 없습니다.</p>
+                  </div>
+                </div>
+              }
+            >
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <DateField label="시작일" value={fromDateInput()} onInput={setFromDateInput} />
+                <DateField label="종료일" value={toDateInput()} onInput={setToDateInput} />
+              </div>
+            </Show>
 
-            <p class="text-xs leading-5 text-muted-foreground">
-              누적 소비를 비워두면 서버가 소비 기록으로 계산합니다. 값을 직접 넣으면 그 금액을 기준으로 재계산합니다.
-            </p>
+            <PercentField value={alertThresholdInput()} onInput={setAlertThresholdInput} />
 
-            <Show when={rebalanceErrorMessage()}>
+            <Show when={errorMessage()}>
               {(message) => (
                 <div class="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
                   {message()}
                 </div>
               )}
             </Show>
-            <Show when={rebalanceSuccessMessage()}>
+            <Show when={successMessage()}>
               {(message) => (
                 <div class="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
                   {message()}
                 </div>
               )}
             </Show>
+            <Show when={overspentVisible()}>
+              <div class="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                현재 활성 기간 예산이 초과 상태입니다. 총 지출이 총예산을 넘어섰습니다.
+              </div>
+            </Show>
 
             <div class="flex justify-end">
               <button
                 type="submit"
-                disabled={rebalancing()}
+                disabled={saving()}
                 class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {rebalancing() ? '재계산 중...' : '활성 예산 재계산'}
+                {saving() ? '저장 중...' : hasActiveBudget() ? '활성 예산 총액 수정' : '활성 예산 생성'}
               </button>
             </div>
           </form>
-
-          <Show when={rebalanceResult()}>
-            {(result) => (
-              <div class="mt-6 space-y-4 border-t border-border pt-6">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div class="rounded-2xl border border-border bg-background/60 p-4">
-                    <p class="text-sm text-muted-foreground">누적 소비</p>
-                    <p class="mt-1 text-lg font-semibold text-foreground">{krwFormatter.format(result().spent_so_far)}</p>
-                  </div>
-                  <div class="rounded-2xl border border-border bg-background/60 p-4">
-                    <p class="text-sm text-muted-foreground">남은 총예산</p>
-                    <p class="mt-1 text-lg font-semibold text-foreground">{krwFormatter.format(result().remaining_budget)}</p>
-                  </div>
-                  <div class="rounded-2xl border border-border bg-background/60 p-4">
-                    <p class="text-sm text-muted-foreground">기준일</p>
-                    <p class="mt-1 text-lg font-semibold text-foreground">{result().as_of_date}</p>
-                  </div>
-                  <div class="rounded-2xl border border-border bg-background/60 p-4">
-                    <p class="text-sm text-muted-foreground">알림 기준</p>
-                    <p class="mt-1 text-lg font-semibold text-foreground">
-                      {(result().alert_threshold * 100).toFixed(0)}%
-                    </p>
-                  </div>
-                  <div class="rounded-2xl border border-border bg-background/60 p-4 md:col-span-2">
-                    <p class="text-sm text-muted-foreground">대상 기간</p>
-                    <p class="mt-1 text-lg font-semibold text-foreground">
-                      {result().from_date} ~ {result().to_date}
-                    </p>
-                  </div>
-                </div>
-
-                <Show when={result().is_overspent}>
-                  <div class="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                    누적 소비가 총예산을 초과했습니다.
-                  </div>
-                </Show>
-              </div>
-            )}
-          </Show>
-        </section>
-      </div>
+        </Show>
+      </section>
     </article>
   )
 }

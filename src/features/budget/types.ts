@@ -8,6 +8,18 @@ export type BudgetSummary = {
   usage_rate: number
   alert: boolean
   alert_threshold: number
+  is_overspent?: boolean
+}
+
+export type BudgetUpsertPayload = {
+  total_budget: number
+  alert_threshold?: number
+  total_spent?: number
+}
+
+export type BudgetPlanPayload = BudgetUpsertPayload & {
+  from_date: string
+  to_date: string
 }
 
 export type SpendRecord = {
@@ -41,29 +53,6 @@ export type CreateSpendingResponse = {
   total_budget: number
   remaining: number
   alert: boolean
-}
-
-export type BudgetPlanResponse = {
-  budget_id: number
-  total_budget: number
-  from_date: string
-  to_date: string
-  daily_budget: number
-  spent_so_far: number
-  remaining_budget: number
-  alert_threshold: number
-}
-
-export type BudgetRebalanceResponse = {
-  budget_id: number
-  total_budget: number
-  from_date: string
-  to_date: string
-  as_of_date: string
-  spent_so_far: number
-  remaining_budget: number
-  alert_threshold: number
-  is_overspent: boolean
 }
 
 export type ApiStatusResponse<T = null> = {

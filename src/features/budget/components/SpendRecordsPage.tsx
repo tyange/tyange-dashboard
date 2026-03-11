@@ -74,7 +74,7 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-foreground">{props.editingRecordId ? '소비 기록 수정' : '소비 기록 추가'}</h2>
-            <p class="mt-1 text-xs text-muted-foreground">week는 서버 응답 기준으로만 그룹화해 표시합니다.</p>
+            <p class="mt-1 text-xs text-muted-foreground">주차 그룹은 표시용이며 예산 계산은 전체 활성 기간 총액 기준입니다.</p>
           </div>
           <Show when={props.editingRecordId !== null}>
             <button type="button" class={mutedButton} onClick={props.onCancelEditing}>

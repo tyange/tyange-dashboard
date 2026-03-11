@@ -1,8 +1,8 @@
 import type {
   ApiStatusResponse,
-  BudgetPlanResponse,
-  BudgetRebalanceResponse,
+  BudgetPlanPayload,
   BudgetSummary,
+  BudgetUpsertPayload,
   CreateSpendingResponse,
   SpendRecord,
   SpendingListResponse,
@@ -25,22 +25,14 @@ export async function fetchBudgetSummary(): Promise<BudgetSummary> {
 }
 
 export async function createBudgetPlan(
-  totalBudget: number,
-  fromDate: string,
-  toDate: string,
-  alertThreshold?: number,
-): Promise<ApiStatusResponse<BudgetPlanResponse>> {
+  payload: BudgetPlanPayload,
+): Promise<ApiStatusResponse<BudgetSummary>> {
   const response = await fetch(`${apiBaseUrl}/budget/plan`, {
     method: 'POST',
     headers: createAuthorizedHeaders(getRequiredAccessToken(), {
       'Content-Type': 'application/json',
     }),
-    body: JSON.stringify({
-      total_budget: totalBudget,
-      from_date: fromDate,
-      to_date: toDate,
-      alert_threshold: alertThreshold,
-    }),
+    body: JSON.stringify(payload),
   })
 
   if (!response.ok) {
@@ -51,32 +43,20 @@ export async function createBudgetPlan(
   return response.json()
 }
 
-export async function rebalanceBudget(
-  totalBudget: number,
-  fromDate: string,
-  toDate: string,
-  asOfDate: string,
-  alertThreshold?: number,
-  spentSoFar?: number,
-): Promise<ApiStatusResponse<BudgetRebalanceResponse>> {
-  const response = await fetch(`${apiBaseUrl}/budget/rebalance`, {
-    method: 'POST',
+export async function updateBudget(
+  payload: BudgetUpsertPayload,
+): Promise<ApiStatusResponse<BudgetSummary>> {
+  const response = await fetch(`${apiBaseUrl}/budget`, {
+    method: 'PUT',
     headers: createAuthorizedHeaders(getRequiredAccessToken(), {
       'Content-Type': 'application/json',
     }),
-    body: JSON.stringify({
-      total_budget: totalBudget,
-      from_date: fromDate,
-      to_date: toDate,
-      as_of_date: asOfDate,
-      spent_so_far: spentSoFar,
-      alert_threshold: alertThreshold,
-    }),
+    body: JSON.stringify(payload),
   })
 
   if (!response.ok) {
     const bodyText = await response.text()
-    throw new Error(`API ${response.status}: ${bodyText || '예산 재계산 실패'}`)
+    throw new Error(`API ${response.status}: ${bodyText || '예산 수정 실패'}`)
   }
 
   return response.json()

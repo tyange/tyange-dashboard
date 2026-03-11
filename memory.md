@@ -47,17 +47,17 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - 소비 기록 페이지는 `GET /budget/spending` 응답의 `weeks[]` 그룹을 그대로 렌더링하고 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id` 후 `GET /budget` + `GET /budget/spending` 재조회로 요약과 목록을 동기화한다
 - Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
 - Budget dashboard and records routes treat `API 404` from budget endpoints as "활성 예산 없음" state and show a dedicated setup-required page instead of a generic error alert
-- Budget setup uses `GET /budget` to prefill the active budget and `POST /budget/plan` to create a total budget with `from_date`/`to_date`
-- Budget setup page also exposes `POST /budget/rebalance` so the user can recalculate the active date-range budget from the dashboard flow
-- `POST /budget/rebalance` now accepts optional `spent_so_far`; the dashboard exposes it as an optional override field and omits it when blank
+- Budget setup uses `GET /budget` to load the active period summary, `POST /budget/plan` to create a new period budget, and `PUT /budget` to update the active period total budget, optional `total_spent` snapshot, and alert threshold
+- 대시보드와 소비 기록 화면의 `weeks[]`는 표시용 그룹이며, 예산 계산 기준은 항상 활성 기간 전체 총액이다
+- `as_of_date`, rebalance, 남은 주차 재분배 개념은 대시보드 UI에서 제거되었다
+- overspent 표시는 `is_overspent`가 있으면 우선 사용하고, 없으면 `remaining_budget < 0`로 보조 판정한다
 
 ## Data Contracts (Budget)
-- `BudgetSummary`: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`
+- `BudgetSummary`: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`, optional `is_overspent`
 - `SpendingListResponse`: `budget_id`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `weeks[]`
 - `SpendingWeekGroup`: `week_key`, `weekly_total`, `record_count`, `records[]`
 - `SpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
-- `BudgetPlanResponse`: `budget_id`, `total_budget`, `from_date`, `to_date`, `daily_budget`, `spent_so_far`, `remaining_budget`, `alert_threshold`
-- `BudgetRebalanceResponse`: `budget_id`, `total_budget`, `from_date`, `to_date`, `as_of_date`, `spent_so_far`, `remaining_budget`, `alert_threshold`, `is_overspent`
+- `POST /budget/plan`, `PUT /budget`, `GET /budget` all use the same budget summary fields: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`, optional `is_overspent`
 
 ## Practical Working Rules
 - Prefer minimal, targeted edits over broad refactors
