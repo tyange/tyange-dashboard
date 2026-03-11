@@ -5,7 +5,6 @@ import type {
   BudgetSummary,
   BudgetUpsertPayload,
   CreateSpendingResponse,
-  RemainingWeeklyBudgetResponse,
   SpendRecord,
   SpendingImportCommitResponse,
   SpendingImportPreviewResponse,
@@ -161,45 +160,6 @@ export async function deleteSpendRecord(recordId: number): Promise<void> {
     const message = await getErrorMessage(response, '소비 기록 삭제 실패')
     throw new Error(`API ${response.status}: ${message}`)
   }
-}
-
-export async function calculateRemainingWeeklyBudget(
-  file: File,
-  payload: {
-    totalBudget: number
-    fromDate: string
-    toDate: string
-    asOfDate?: string
-  },
-): Promise<RemainingWeeklyBudgetResponse> {
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('total_budget', String(payload.totalBudget))
-  formData.append('from_date', payload.fromDate)
-  formData.append('to_date', payload.toDate)
-
-  if (payload.asOfDate) {
-    formData.append('as_of_date', payload.asOfDate)
-  }
-
-  const response = await fetch(`${apiBaseUrl}/budget/card-excel/remaining-weekly-budget`, {
-    method: 'POST',
-    headers: getAuthHeaders({
-      Accept: 'application/json',
-    }),
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const message = await getErrorMessage(response, '주간 예산 계산 실패')
-    throw new Error(`API ${response.status}: ${message}`)
-  }
-
-  const payloadResponse = (await response.json()) as
-    | RemainingWeeklyBudgetResponse
-    | ApiStatusResponse<RemainingWeeklyBudgetResponse>
-
-  return unwrapApiData(payloadResponse)
 }
 
 export async function importSpendingPreview(file: File): Promise<SpendingImportPreviewResponse> {

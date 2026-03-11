@@ -20,7 +20,6 @@ export type BudgetSummary = {
 export type BudgetUpsertPayload = {
   total_budget: number
   alert_threshold?: number
-  total_spent?: number
 }
 
 export type BudgetPlanPayload = BudgetUpsertPayload & {
@@ -48,7 +47,7 @@ export type SpendingListResponse = {
   from_date: string
   to_date: string
   total_spent: number
-  remaining_budget: number
+  remaining: number
   weeks: SpendingWeekGroup[]
 }
 
@@ -59,26 +58,6 @@ export type CreateSpendingResponse = {
   total_budget: number
   remaining: number
   alert: boolean
-}
-
-export type RemainingWeeklyBudgetBucket = {
-  bucket_index: number
-  from_date: string
-  to_date: string
-  days: number
-  amount: number
-}
-
-export type RemainingWeeklyBudgetResponse = {
-  total_budget: number
-  period_start: string
-  period_end: string
-  as_of_date: string
-  spent_net: number
-  remaining_budget: number
-  remaining_days: number
-  is_overspent: boolean
-  buckets: RemainingWeeklyBudgetBucket[]
 }
 
 export type SpendingImportRowStatus = 'new' | 'duplicate' | 'out_of_period' | 'invalid'
@@ -120,5 +99,5 @@ export type SpendingImportCommitResponse = {
   inserted_amount_sum: number
   inserted_net_amount_sum: number
   period_total_spent_from_records: number
-  budget_snapshot_total_spent_unchanged: boolean
+  remaining: number
 }

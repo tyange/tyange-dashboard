@@ -46,23 +46,22 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
 - 대시보드는 `GET /budget` 단일 응답으로 활성 기간 총예산을 표시하고, 404는 "활성 예산 없음" 상태로 처리한다
 - 예산 설정 페이지는 `GET /budget`으로 활성 기간 예산을 확인하고, `POST /budget/plan` 또는 `PUT /budget`으로 명시적으로 저장한다
-- 예산 설정 페이지는 `POST /budget/card-excel/remaining-weekly-budget` 계산 결과를 검토한 뒤, 추천 금액을 활성 기간 총예산 입력값으로 옮겨 직접 저장하는 3단계 플로우를 사용한다
+- 예산 설정 페이지는 엑셀 기반 예산 계산/업로드 UI를 노출하지 않고, 활성 기간 예산 생성·수정만 담당한다
 - 소비 기록 페이지는 `GET /budget/spending` 응답의 `weeks[]` 그룹을 그대로 렌더링하고 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id` 후 `GET /budget` + `GET /budget/spending` 재조회로 요약과 목록을 동기화한다
 - 소비 기록 페이지는 `POST /budget/spending/import-preview` -> 사용자 선택 -> `POST /budget/spending/import-commit` 흐름으로 신한카드 XLS 가져오기를 지원하며, 기본 선택은 `status=new` 행만 허용한다
-- XLS import는 `spending_records`만 갱신하고 budget snapshot `total_spent`는 갱신하지 않으므로 대시보드 요약 총지출과 소비 기록 합계가 서로 다를 수 있다는 안내를 UI에 노출한다
+- `tyange-cms-api` `6663a47` 이후 예산 총지출은 거래 원장에서 자동 계산되며, 예산 생성/수정 요청에 `total_spent`를 보내면 400으로 거절된다
+- XLS import 반영 결과는 `period_total_spent_from_records`와 `remaining`을 반환하며, 대시보드/소비 기록 화면은 모두 동일한 원장 기준 합계를 사용한다
 - Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
 - 대시보드와 소비 기록 화면의 `weeks[]`는 표시용 그룹이며, 예산 계산 기준은 항상 활성 기간 전체 총액이다
 - 예산/소비 관련 404는 기본적으로 "활성 기간 예산 없음" 또는 "기록 없음" 메시지로 처리하고 예산 설정 유도 화면을 노출한다
 - 엑셀 계산 플로우는 업로드/계산, 버킷 검토, 활성 기간 예산 저장의 3단계를 명확히 분리한다
-- `POST /budget/card-excel/remaining-weekly-budget`는 미리보기 계산만 수행하고 저장은 하지 않는다
 - 401은 세션 만료 메시지, 404는 활성 예산/기록 없음 메시지, 400 엑셀 계산 오류는 파일/입력값 오류 메시지로 매핑한다
 
 ## Data Contracts (Budget)
 - `BudgetSummary`: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`, optional `is_overspent`
 - `SpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
-- `SpendingListResponse`: `budget_id`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `weeks[]`
+- `SpendingListResponse`: `budget_id`, `from_date`, `to_date`, `total_spent`, `remaining`, `weeks[]`
 - `SpendingWeekGroup`: `week_key`, `weekly_total`, `record_count`, `records[]`
-- `RemainingWeeklyBudgetResponse`: `total_budget`, `period_start`, `period_end`, `as_of_date`, `spent_net`, `remaining_budget`, `remaining_days`, `is_overspent`, `buckets[]`
 
 ## Practical Working Rules
 - Prefer minimal, targeted edits over broad refactors

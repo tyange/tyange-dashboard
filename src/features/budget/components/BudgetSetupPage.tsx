@@ -1,17 +1,12 @@
 import { Popover } from '@kobalte/core/popover'
 import { TextField } from '@kobalte/core/text-field'
 import { useNavigate } from '@solidjs/router'
-import { For, Show, createSignal, onMount } from 'solid-js'
-import {
-  calculateRemainingWeeklyBudget,
-  createBudgetPlan,
-  fetchBudgetSummary,
-  updateBudget,
-} from '../api'
+import { Show, createSignal, onMount } from 'solid-js'
+import { createBudgetPlan, fetchBudgetSummary, updateBudget } from '../api'
 import { getApiErrorStatus, isBudgetNotConfiguredError } from '../errors'
 import { krwFormatter } from '../format'
-import type { BudgetSummary, RemainingWeeklyBudgetResponse } from '../types'
-import { formatDateInput, pickRecommendedWeeklyLimit } from '../utils'
+import type { BudgetSummary } from '../types'
+import { formatDateInput } from '../utils'
 
 function toThresholdPercent(value: number) {
   return Math.round(value * 100)
@@ -32,10 +27,6 @@ function dateInputOnly(value: string) {
   return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`
 }
 
-function formatBucketLabel(fromDate: string, toDate: string, days: number) {
-  return `${fromDate} ~ ${toDate} (${days}일)`
-}
-
 function getSaveErrorMessage(error: unknown) {
   const status = getApiErrorStatus(error)
 
@@ -49,21 +40,6 @@ function getSaveErrorMessage(error: unknown) {
 
   return (error as Error).message
 }
-
-function getCalculatorErrorMessage(error: unknown) {
-  const status = getApiErrorStatus(error)
-
-  if (status === 401) {
-    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
-  }
-
-  if (status === 400) {
-    return `잘못된 파일이거나 날짜/예산 입력이 올바르지 않습니다. ${(error as Error).message.slice('API 400: '.length)}`
-  }
-
-  return (error as Error).message
-}
-
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" class="h-4 w-4">
@@ -203,19 +179,10 @@ export default function BudgetSetupPage() {
   const [hasActiveBudget, setHasActiveBudget] = createSignal(false)
   const [activeBudget, setActiveBudget] = createSignal<BudgetSummary | null>(null)
   const [saveTotalBudgetInput, setSaveTotalBudgetInput] = createSignal('')
-  const [saveTotalSpentInput, setSaveTotalSpentInput] = createSignal('')
   const [saveFromDateInput, setSaveFromDateInput] = createSignal('')
   const [saveToDateInput, setSaveToDateInput] = createSignal('')
   const [alertThresholdInput, setAlertThresholdInput] = createSignal('85')
-  const [calcTotalBudgetInput, setCalcTotalBudgetInput] = createSignal('')
-  const [calcFromDateInput, setCalcFromDateInput] = createSignal('')
-  const [calcToDateInput, setCalcToDateInput] = createSignal('')
-  const [calcAsOfDateInput, setCalcAsOfDateInput] = createSignal(formatDateInput(new Date()))
-  const [selectedFile, setSelectedFile] = createSignal<File | null>(null)
-  const [calculatorResult, setCalculatorResult] = createSignal<RemainingWeeklyBudgetResponse | null>(null)
-  const [loading, setLoading] = createSignal(true)
   const [saving, setSaving] = createSignal(false)
-  const [calculating, setCalculating] = createSignal(false)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null)
 
@@ -225,13 +192,9 @@ export default function BudgetSetupPage() {
         setHasActiveBudget(true)
         setActiveBudget(summary)
         setSaveTotalBudgetInput(String(summary.total_budget))
-        setSaveTotalSpentInput(String(summary.total_spent))
         setSaveFromDateInput(summary.from_date)
         setSaveToDateInput(summary.to_date)
         setAlertThresholdInput(String(toThresholdPercent(summary.alert_threshold)))
-        setCalcTotalBudgetInput(String(summary.total_budget))
-        setCalcFromDateInput(summary.from_date)
-        setCalcToDateInput(summary.to_date)
       })
       .catch((error) => {
         if (isBudgetNotConfiguredError(error)) {
@@ -241,74 +204,12 @@ export default function BudgetSetupPage() {
 
         setErrorMessage(getSaveErrorMessage(error))
       })
-      .finally(() => {
-        setLoading(false)
-      })
   })
-
-  const submitCalculator = async () => {
-    const file = selectedFile()
-    const totalBudget = Number(calcTotalBudgetInput())
-    const fromDate = calcFromDateInput().trim()
-    const toDate = calcToDateInput().trim()
-    const asOfDate = calcAsOfDateInput().trim()
-
-    if (!Number.isFinite(totalBudget) || totalBudget <= 0) {
-      setErrorMessage('총 예산은 0보다 큰 숫자로 입력해주세요.')
-      setSuccessMessage(null)
-      return
-    }
-
-    if (!fromDate || !toDate) {
-      setErrorMessage('시작일과 종료일을 모두 입력해주세요.')
-      setSuccessMessage(null)
-      return
-    }
-
-    if (fromDate > toDate) {
-      setErrorMessage('시작일은 종료일보다 늦을 수 없습니다.')
-      setSuccessMessage(null)
-      return
-    }
-
-    if (!file) {
-      setErrorMessage('카드 엑셀 파일을 먼저 선택해주세요.')
-      setSuccessMessage(null)
-      return
-    }
-
-    setCalculating(true)
-    setErrorMessage(null)
-    setSuccessMessage(null)
-
-    try {
-      const result = await calculateRemainingWeeklyBudget(file, {
-        totalBudget,
-        fromDate,
-        toDate,
-        asOfDate: asOfDate || undefined,
-      })
-      const recommendedBudget = pickRecommendedWeeklyLimit(result)
-
-      setCalculatorResult(result)
-      setSaveTotalBudgetInput(String(recommendedBudget))
-      setSaveFromDateInput(fromDate)
-      setSaveToDateInput(toDate)
-      setSuccessMessage('계산 결과를 불러왔습니다. 추천 금액을 검토한 뒤 아래 단계에서 활성 기간 예산으로 직접 저장해주세요.')
-    } catch (error) {
-      setCalculatorResult(null)
-      setErrorMessage(getCalculatorErrorMessage(error))
-    } finally {
-      setCalculating(false)
-    }
-  }
 
   const submitBudget = async () => {
     if (saving()) return
 
     const totalBudget = Number(saveTotalBudgetInput())
-    const totalSpentValue = saveTotalSpentInput().trim()
-    const totalSpent = totalSpentValue === '' ? undefined : Number(totalSpentValue)
     const alertThresholdPercent = Number(alertThresholdInput())
     const fromDate = saveFromDateInput().trim()
     const toDate = saveToDateInput().trim()
@@ -321,12 +222,6 @@ export default function BudgetSetupPage() {
 
     if (!Number.isFinite(alertThresholdPercent) || alertThresholdPercent < 0 || alertThresholdPercent > 100) {
       setErrorMessage('알림 기준은 0에서 100 사이의 숫자로 입력해주세요.')
-      setSuccessMessage(null)
-      return
-    }
-
-    if (totalSpent !== undefined && (!Number.isFinite(totalSpent) || totalSpent < 0)) {
-      setErrorMessage('현재까지 지출 총액은 0 이상의 숫자로 입력해주세요.')
       setSuccessMessage(null)
       return
     }
@@ -353,7 +248,6 @@ export default function BudgetSetupPage() {
       if (hasActiveBudget()) {
         const result = await updateBudget({
           total_budget: totalBudget,
-          total_spent: totalSpent,
           alert_threshold: alertThreshold,
         })
         const updatedBudget = result.data ?? null
@@ -361,7 +255,6 @@ export default function BudgetSetupPage() {
         if (updatedBudget) {
           setActiveBudget(updatedBudget)
           setSaveTotalBudgetInput(String(updatedBudget.total_budget))
-          setSaveTotalSpentInput(String(updatedBudget.total_spent))
           setSaveFromDateInput(updatedBudget.from_date)
           setSaveToDateInput(updatedBudget.to_date)
           setAlertThresholdInput(String(toThresholdPercent(updatedBudget.alert_threshold)))
@@ -373,7 +266,6 @@ export default function BudgetSetupPage() {
           total_budget: totalBudget,
           from_date: fromDate,
           to_date: toDate,
-          total_spent: totalSpent,
           alert_threshold: alertThreshold,
         })
 
@@ -399,7 +291,7 @@ export default function BudgetSetupPage() {
         <div>
           <h1 class="text-2xl font-semibold tracking-tight text-foreground">예산 설정</h1>
           <p class="mt-1 text-sm text-muted-foreground">
-            활성 기간 예산을 생성하거나 수정하고, 카드 엑셀 계산 결과를 검토한 뒤 명시적으로 저장할 수 있습니다.
+            활성 기간 예산을 생성하거나 수정합니다.
           </p>
         </div>
         <div class="flex gap-2">
@@ -429,130 +321,10 @@ export default function BudgetSetupPage() {
       </Show>
 
       <section class={card}>
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Step 1</p>
-            <h2 class="mt-2 text-lg font-semibold text-foreground">엑셀 업로드 후 계산</h2>
-            <p class="mt-1 text-sm text-muted-foreground">
-              카드 사용 내역 파일을 기준으로 남은 예산과 주간 버킷 추천 금액을 계산합니다.
-            </p>
-          </div>
-          <Show when={!loading()} fallback={<span class="text-xs text-muted-foreground">불러오는 중...</span>}>
-            <span class="rounded-full bg-primary/12 px-3 py-1 text-xs font-medium text-primary">
-              {hasActiveBudget() ? '활성 예산 기준' : '새 기간 기준'}
-            </span>
-          </Show>
-        </div>
-
-        <div class="mt-5 grid gap-3 md:grid-cols-2">
-          <MoneyField
-            label="총 예산"
-            value={calcTotalBudgetInput()}
-            onInput={setCalcTotalBudgetInput}
-            placeholder="예: 2400000"
-          />
-          <DateField label="기준일 (선택)" value={calcAsOfDateInput()} onInput={setCalcAsOfDateInput} />
-          <DateField label="시작일" value={calcFromDateInput()} onInput={setCalcFromDateInput} />
-          <DateField label="종료일" value={calcToDateInput()} onInput={setCalcToDateInput} />
-          <label class="block md:col-span-2">
-            <span class="mb-2 block text-sm font-medium text-foreground">카드 사용 엑셀 파일</span>
-            <input
-              type="file"
-              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-              class="block w-full rounded-2xl border border-border bg-background/70 px-3 py-2 text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-5 file:py-2.5 file:text-sm file:font-semibold file:text-primary-foreground"
-              onChange={(event) => setSelectedFile(event.currentTarget.files?.[0] ?? null)}
-            />
-          </label>
-        </div>
-
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <Show when={selectedFile()}>
-            {(file) => <p class="text-xs text-muted-foreground">선택 파일: {file().name}</p>}
-          </Show>
-          <button type="button" class={buttonClass} disabled={calculating()} onClick={() => void submitCalculator()}>
-            {calculating() ? '계산 중...' : '엑셀 업로드 후 계산'}
-          </button>
-        </div>
-      </section>
-
-      <section class={card}>
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Step 2</p>
-          <h2 class="mt-2 text-lg font-semibold text-foreground">추천 버킷 검토</h2>
+          <h2 class="text-lg font-semibold text-foreground">활성 기간 예산 저장</h2>
           <p class="mt-1 text-sm text-muted-foreground">
-            계산 결과는 미리보기입니다. 추천 금액을 확인한 뒤 아래 단계에서 활성 기간 예산으로 직접 저장해야 반영됩니다.
-          </p>
-        </div>
-
-        <Show when={calculatorResult()} fallback={<p class="mt-5 text-sm text-muted-foreground">아직 계산 결과가 없습니다. 먼저 엑셀 업로드 후 계산을 진행해주세요.</p>}>
-          {(result) => (
-            <div class="mt-5 space-y-4">
-              <div class="grid gap-3 md:grid-cols-4">
-                <article class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-                  <p class="text-xs text-muted-foreground">총 예산</p>
-                  <p class="mt-2 text-lg font-semibold text-foreground">{krwFormatter.format(result().total_budget)}</p>
-                </article>
-                <article class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-                  <p class="text-xs text-muted-foreground">현재까지 순지출</p>
-                  <p class="mt-2 text-lg font-semibold text-foreground">{krwFormatter.format(result().spent_net)}</p>
-                </article>
-                <article class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-                  <p class="text-xs text-muted-foreground">남은 예산</p>
-                  <p class="mt-2 text-lg font-semibold text-foreground">{krwFormatter.format(result().remaining_budget)}</p>
-                </article>
-                <article class="rounded-2xl border border-border/80 bg-secondary/20 p-4">
-                  <p class="text-xs text-muted-foreground">남은 일수</p>
-                  <p class="mt-2 text-lg font-semibold text-foreground">{result().remaining_days}일</p>
-                </article>
-              </div>
-
-              <p class="text-sm text-muted-foreground">
-                기간 {result().period_start} ~ {result().period_end} · 기준일 {result().as_of_date}
-              </p>
-
-              <Show when={result().is_overspent}>
-                <div class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  남은 예산이 음수입니다. 버킷 추천 금액은 0원 또는 매우 낮게 계산될 수 있습니다.
-                </div>
-              </Show>
-
-              <div class="space-y-3">
-                <For each={result().buckets}>
-                  {(bucket) => {
-                    const isRecommended = bucket.amount === pickRecommendedWeeklyLimit(result())
-
-                    return (
-                      <article class={`rounded-2xl border p-4 ${isRecommended ? 'border-primary/40 bg-primary/8' : 'border-border/80 bg-secondary/20'}`}>
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p class="text-sm font-semibold text-foreground">
-                              버킷 {bucket.bucket_index}
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">{formatBucketLabel(bucket.from_date, bucket.to_date, bucket.days)}</p>
-                          </div>
-                          <div class="text-right">
-                            <p class="text-lg font-semibold text-foreground">{krwFormatter.format(bucket.amount)}</p>
-                            <Show when={isRecommended}>
-                              <p class="text-xs text-primary">추천 저장값으로 반영됨</p>
-                            </Show>
-                          </div>
-                        </div>
-                      </article>
-                    )
-                  }}
-                </For>
-              </div>
-            </div>
-          )}
-        </Show>
-      </section>
-
-      <section class={card}>
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Step 3</p>
-          <h2 class="mt-2 text-lg font-semibold text-foreground">활성 기간 예산 명시적으로 저장</h2>
-          <p class="mt-1 text-sm text-muted-foreground">
-            계산 결과는 자동 저장되지 않습니다. 아래 활성 기간 예산 저장을 눌러야 실제 예산에 반영됩니다.
+            활성 기간 총예산과 알림 기준을 직접 저장합니다.
           </p>
         </div>
 
@@ -562,14 +334,7 @@ export default function BudgetSetupPage() {
             value={saveTotalBudgetInput()}
             onInput={setSaveTotalBudgetInput}
             placeholder="예: 450000"
-            description="엑셀 계산 후에는 추천 버킷 금액이 기본값으로 채워집니다."
-          />
-          <MoneyField
-            label="현재까지 지출 총액 (선택)"
-            value={saveTotalSpentInput()}
-            onInput={setSaveTotalSpentInput}
-            placeholder="예: 120000"
-            description="입력하면 snapshot total_spent로 저장됩니다."
+            description="총지출은 거래 원장에서 자동 계산됩니다."
           />
           <DateField
             label="시작일"

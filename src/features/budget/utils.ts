@@ -1,5 +1,3 @@
-import type { RemainingWeeklyBudgetResponse } from './types'
-
 export function formatDateInput(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -14,19 +12,4 @@ export function toDateTimeInputValue(value: string) {
 
 export function toApiDateTime(value: string) {
   return value.length === 16 ? `${value}:00` : value
-}
-
-export function pickRecommendedWeeklyLimit(
-  result: RemainingWeeklyBudgetResponse,
-  today = formatDateInput(new Date()),
-) {
-  const currentBucket = result.buckets.find(
-    (bucket) => bucket.from_date <= today && bucket.to_date >= today,
-  )
-
-  if (currentBucket) {
-    return currentBucket.amount
-  }
-
-  return result.buckets[0]?.amount ?? 0
 }

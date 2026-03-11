@@ -341,7 +341,7 @@ export default function SpendRecordsRoutePage() {
       fromDate={spendingGroups()?.from_date ?? summary()?.from_date ?? '-'}
       toDate={spendingGroups()?.to_date ?? summary()?.to_date ?? '-'}
       totalSpent={spendingGroups()?.total_spent ?? summary()?.total_spent ?? 0}
-      remainingBudget={spendingGroups()?.remaining_budget ?? summary()?.remaining_budget ?? 0}
+      remainingBudget={spendingGroups()?.remaining ?? summary()?.remaining_budget ?? 0}
       weekGroups={spendingGroups()?.weeks ?? []}
       loading={loading()}
       saving={saving()}

@@ -305,8 +305,8 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                 </article>
               </div>
               <p class="mt-4 text-xs leading-5 text-emerald-100/85">
-                소비 기록 total_spent는 {krwFormatter.format(result().period_total_spent_from_records)} 로 다시 계산되었지만, 예산 snapshot total_spent는
-                {` ${result().budget_snapshot_total_spent_unchanged ? '변경되지 않습니다' : '갱신되었습니다'}`}. 따라서 대시보드 요약과 소비 기록 합계가 다를 수 있습니다.
+                반영 후 활성 기간 소비 합계는 {krwFormatter.format(result().period_total_spent_from_records)}이고 남은 예산은 {krwFormatter.format(result().remaining)}입니다.
+                현재 API는 거래 원장을 기준으로 예산 요약을 자동 재계산하므로, 대시보드와 소비 기록 화면은 같은 기준을 사용합니다.
               </p>
             </div>
           )}
@@ -387,10 +387,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
 
       <section class={card}>
         <Show when={!props.loading} fallback={<p class="text-sm text-muted-foreground">소비 기록을 불러오는 중...</p>}>
-          <div class="mb-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-100">
-            XLS 가져오기는 `spending_records`만 갱신하고 예산 snapshot total_spent는 바꾸지 않습니다. 그래서 대시보드의 총지출과 이 페이지의 총지출이 서로 다를 수 있습니다.
-          </div>
-
           <Show when={props.weekGroups.length > 0} fallback={<p class="text-sm text-muted-foreground">소비 기록이 없습니다.</p>}>
             <div class="space-y-5">
               <For each={props.weekGroups}>
