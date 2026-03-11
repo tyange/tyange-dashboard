@@ -13,6 +13,7 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Dev server: `bun run dev` (default local URL: `http://localhost:3001`)
 - Build: `bun run build`
 - Preview build: `bun run preview`
+- Test: `bun run test`
 
 ## Environment Notes
 - Required runtime env var: `VITE_CMS_API_BASE_URL`
@@ -40,24 +41,28 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
 - Protected API key management page lives at `/api-keys` and manages only the currently logged-in user's keys
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
-- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, budget setup, and API key management entries
+- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, spending records, budget setup, and API key management entries
 - API errors are surfaced in UI as a top error alert block
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
 - 대시보드는 `GET /budget` 단일 응답으로 활성 기간 총예산을 표시하고, 404는 "활성 예산 없음" 상태로 처리한다
+- 예산 설정 페이지는 `GET /budget`으로 활성 기간 예산을 확인하고, `POST /budget/plan` 또는 `PUT /budget`으로 명시적으로 저장한다
+- 예산 설정 페이지는 `POST /budget/card-excel/remaining-weekly-budget` 계산 결과를 검토한 뒤, 추천 금액을 활성 기간 총예산 입력값으로 옮겨 직접 저장하는 3단계 플로우를 사용한다
 - 소비 기록 페이지는 `GET /budget/spending` 응답의 `weeks[]` 그룹을 그대로 렌더링하고 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id` 후 `GET /budget` + `GET /budget/spending` 재조회로 요약과 목록을 동기화한다
+- 소비 기록 페이지는 `POST /budget/spending/import-preview` -> 사용자 선택 -> `POST /budget/spending/import-commit` 흐름으로 신한카드 XLS 가져오기를 지원하며, 기본 선택은 `status=new` 행만 허용한다
+- XLS import는 `spending_records`만 갱신하고 budget snapshot `total_spent`는 갱신하지 않으므로 대시보드 요약 총지출과 소비 기록 합계가 서로 다를 수 있다는 안내를 UI에 노출한다
 - Budget API requests require the raw access token in the `Authorization` header because `tyange-cms-api` `260308` protects all budget read/write routes with JWT auth
-- Budget dashboard and records routes treat `API 404` from budget endpoints as "활성 예산 없음" state and show a dedicated setup-required page instead of a generic error alert
-- Budget setup uses `GET /budget` to load the active period summary, `POST /budget/plan` to create a new period budget, and `PUT /budget` to update the active period total budget, optional `total_spent` snapshot, and alert threshold
 - 대시보드와 소비 기록 화면의 `weeks[]`는 표시용 그룹이며, 예산 계산 기준은 항상 활성 기간 전체 총액이다
-- `as_of_date`, rebalance, 남은 주차 재분배 개념은 대시보드 UI에서 제거되었다
-- overspent 표시는 `is_overspent`가 있으면 우선 사용하고, 없으면 `remaining_budget < 0`로 보조 판정한다
+- 예산/소비 관련 404는 기본적으로 "활성 기간 예산 없음" 또는 "기록 없음" 메시지로 처리하고 예산 설정 유도 화면을 노출한다
+- 엑셀 계산 플로우는 업로드/계산, 버킷 검토, 활성 기간 예산 저장의 3단계를 명확히 분리한다
+- `POST /budget/card-excel/remaining-weekly-budget`는 미리보기 계산만 수행하고 저장은 하지 않는다
+- 401은 세션 만료 메시지, 404는 활성 예산/기록 없음 메시지, 400 엑셀 계산 오류는 파일/입력값 오류 메시지로 매핑한다
 
 ## Data Contracts (Budget)
 - `BudgetSummary`: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`, optional `is_overspent`
+- `SpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
 - `SpendingListResponse`: `budget_id`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `weeks[]`
 - `SpendingWeekGroup`: `week_key`, `weekly_total`, `record_count`, `records[]`
-- `SpendRecord`: `record_id`, `amount`, `merchant`, `transacted_at`, `created_at`
-- `POST /budget/plan`, `PUT /budget`, `GET /budget` all use the same budget summary fields: `budget_id`, `total_budget`, `from_date`, `to_date`, `total_spent`, `remaining_budget`, `usage_rate`, `alert`, `alert_threshold`, optional `is_overspent`
+- `RemainingWeeklyBudgetResponse`: `total_budget`, `period_start`, `period_end`, `as_of_date`, `spent_net`, `remaining_budget`, `remaining_days`, `is_overspent`, `buckets[]`
 
 ## Practical Working Rules
 - Prefer minimal, targeted edits over broad refactors

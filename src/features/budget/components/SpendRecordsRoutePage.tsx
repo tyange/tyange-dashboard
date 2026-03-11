@@ -1,18 +1,81 @@
 import { useNavigate } from '@solidjs/router'
 import { createSignal, onMount } from 'solid-js'
-import { createSpendRecord, deleteSpendRecord, fetchBudgetSummary, fetchSpendingGroups, updateSpendRecord } from '../api'
-import { isBudgetNotConfiguredError } from '../errors'
-import type { BudgetSummary, CreateSpendingResponse, SpendRecord, SpendingListResponse } from '../types'
+import {
+  createSpendRecord,
+  deleteSpendRecord,
+  fetchBudgetSummary,
+  fetchSpendingGroups,
+  importSpendingCommit,
+  importSpendingPreview,
+  updateSpendRecord,
+} from '../api'
+import { getApiErrorStatus, isBudgetNotConfiguredError } from '../errors'
+import type {
+  BudgetSummary,
+  CreateSpendingResponse,
+  SpendRecord,
+  SpendingImportCommitResponse,
+  SpendingImportPreviewResponse,
+  SpendingListResponse,
+} from '../types'
+import { toApiDateTime, toDateTimeInputValue } from '../utils'
 import BudgetSetupRequiredState from './BudgetSetupRequiredState'
 import SpendRecordsPage from './SpendRecordsPage'
 
-function toDateTimeInputValue(value: string) {
-  const normalized = value.replace(' ', 'T')
-  return normalized.length >= 16 ? normalized.slice(0, 16) : normalized
+function getPreviewErrorMessage(error: unknown) {
+  const status = getApiErrorStatus(error)
+  const message = (error as Error).message
+
+  if (status === 401) {
+    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  if (status === 404) {
+    return '활성 예산이 없어 가져오기를 진행할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
+  }
+
+  if (status === 400) {
+    return `잘못된 파일이거나 미리보기를 생성할 수 없습니다. ${message.slice('API 400: '.length).trim()}`
+  }
+
+  return message
 }
 
-function toApiDateTime(value: string) {
-  return value.length === 16 ? `${value}:00` : value
+function getCommitErrorMessage(error: unknown) {
+  const status = getApiErrorStatus(error)
+  const message = (error as Error).message
+
+  if (status === 401) {
+    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  if (status === 404) {
+    return '활성 예산이 없어 가져오기를 반영할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
+  }
+
+  if (status === 409) {
+    return `선택한 거래와 서버 상태가 일치하지 않습니다. 미리보기를 다시 불러온 뒤 재시도해주세요. ${message.slice('API 409: '.length).trim()}`
+  }
+
+  if (status === 400) {
+    return `업로드 요청을 처리하지 못했습니다. ${message.slice('API 400: '.length).trim()}`
+  }
+
+  return message
+}
+
+function getMutationErrorMessage(error: unknown) {
+  const status = getApiErrorStatus(error)
+
+  if (status === 401) {
+    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  if (status === 404) {
+    return '활성 예산이 없거나 수정할 소비 기록을 찾지 못했습니다.'
+  }
+
+  return (error as Error).message
 }
 
 export default function SpendRecordsRoutePage() {
@@ -29,6 +92,13 @@ export default function SpendRecordsRoutePage() {
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null)
   const [requiresBudgetSetup, setRequiresBudgetSetup] = createSignal(false)
+  const [importFile, setImportFile] = createSignal<File | null>(null)
+  const [importPreview, setImportPreview] = createSignal<SpendingImportPreviewResponse | null>(null)
+  const [importResult, setImportResult] = createSignal<SpendingImportCommitResponse | null>(null)
+  const [selectedFingerprints, setSelectedFingerprints] = createSignal<string[]>([])
+  const [previewLoading, setPreviewLoading] = createSignal(false)
+  const [commitLoading, setCommitLoading] = createSignal(false)
+  const [importMessage, setImportMessage] = createSignal<string | null>(null)
 
   const resetForm = () => {
     setEditingRecordId(null)
@@ -37,11 +107,23 @@ export default function SpendRecordsRoutePage() {
     setTransactedAtInput('')
   }
 
-  const loadRecords = async () => {
+  const resetImportState = () => {
+    setImportPreview(null)
+    setImportResult(null)
+    setSelectedFingerprints([])
+    setImportMessage(null)
+  }
+
+  const loadRecords = async (options?: { preserveImportFeedback?: boolean }) => {
     setLoading(true)
     setErrorMessage(null)
     setSuccessMessage(null)
     setRequiresBudgetSetup(false)
+
+    if (!options?.preserveImportFeedback) {
+      setImportMessage(null)
+      setImportResult(null)
+    }
 
     try {
       const [nextSummary, nextGroups] = await Promise.all([fetchBudgetSummary(), fetchSpendingGroups()])
@@ -53,7 +135,7 @@ export default function SpendRecordsRoutePage() {
         setSummary(null)
         setSpendingGroups(null)
       } else {
-        setErrorMessage((error as Error).message)
+        setErrorMessage(getMutationErrorMessage(error))
       }
     } finally {
       setLoading(false)
@@ -117,9 +199,9 @@ export default function SpendRecordsRoutePage() {
       }
 
       resetForm()
-      await loadRecords()
+      await loadRecords({ preserveImportFeedback: true })
     } catch (error) {
-      setErrorMessage((error as Error).message)
+      setErrorMessage(getMutationErrorMessage(error))
     } finally {
       setSaving(false)
     }
@@ -147,11 +229,105 @@ export default function SpendRecordsRoutePage() {
         resetForm()
       }
       setSuccessMessage('소비 기록을 삭제했습니다.')
-      await loadRecords()
+      await loadRecords({ preserveImportFeedback: true })
     } catch (error) {
-      setErrorMessage((error as Error).message)
+      setErrorMessage(getMutationErrorMessage(error))
     } finally {
       setDeletingRecordId(null)
+    }
+  }
+
+  const handleImportFile = (file: File | null) => {
+    setImportFile(file)
+    resetImportState()
+  }
+
+  const requestPreview = async () => {
+    const file = importFile()
+
+    if (!file) {
+      setImportMessage('가져올 신한카드 XLS 파일을 먼저 선택해주세요.')
+      setImportResult(null)
+      return
+    }
+
+    setPreviewLoading(true)
+    setImportMessage(null)
+    setImportResult(null)
+    setImportPreview(null)
+    setSelectedFingerprints([])
+
+    try {
+      const preview = await importSpendingPreview(file)
+      const defaults = preview.rows
+        .filter((row) => row.status === 'new')
+        .map((row) => row.fingerprint)
+
+      setImportPreview(preview)
+      setSelectedFingerprints(defaults)
+      setImportMessage(`미리보기를 불러왔습니다. 신규 ${preview.summary.new_count}건이 기본 선택되었습니다.`)
+    } catch (error) {
+      setImportMessage(getPreviewErrorMessage(error))
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const toggleFingerprint = (fingerprint: string, checked: boolean) => {
+    setSelectedFingerprints((prev) => {
+      if (checked) {
+        return prev.includes(fingerprint) ? prev : [...prev, fingerprint]
+      }
+
+      return prev.filter((value) => value !== fingerprint)
+    })
+  }
+
+  const selectAllFingerprints = () => {
+    const preview = importPreview()
+    if (!preview) return
+
+    setSelectedFingerprints(
+      preview.rows.filter((row) => row.status === 'new').map((row) => row.fingerprint),
+    )
+  }
+
+  const clearSelectedFingerprints = () => {
+    setSelectedFingerprints([])
+  }
+
+  const commitImport = async () => {
+    const file = importFile()
+    const preview = importPreview()
+    const fingerprints = selectedFingerprints()
+
+    if (!file || !preview) {
+      setImportMessage('먼저 미리보기를 생성해주세요.')
+      return
+    }
+
+    if (fingerprints.length === 0) {
+      setImportMessage('반영할 신규 거래를 하나 이상 선택해주세요.')
+      return
+    }
+
+    setCommitLoading(true)
+    setImportMessage(null)
+    setImportResult(null)
+
+    try {
+      const result = await importSpendingCommit(file, fingerprints)
+      setImportResult(result)
+      setImportPreview(null)
+      setSelectedFingerprints([])
+      setImportMessage(
+        `가져오기를 반영했습니다. ${result.inserted_count}건이 추가되었고 예산 요약과 소비 기록을 다시 불러왔습니다.`,
+      )
+      await loadRecords({ preserveImportFeedback: true })
+    } catch (error) {
+      setImportMessage(getCommitErrorMessage(error))
+    } finally {
+      setCommitLoading(false)
     }
   }
 
@@ -176,6 +352,14 @@ export default function SpendRecordsRoutePage() {
       transactedAtInput={transactedAtInput()}
       errorMessage={errorMessage()}
       successMessage={successMessage()}
+      importFileName={importFile()?.name ?? null}
+      importPreview={importPreview()}
+      importResult={importResult()}
+      importMessage={importMessage()}
+      previewLoading={previewLoading()}
+      commitLoading={commitLoading()}
+      selectedFingerprints={selectedFingerprints()}
+      selectableFingerprintCount={importPreview()?.rows.filter((row) => row.status === 'new').length ?? 0}
       onAmountInput={setAmountInput}
       onMerchantInput={setMerchantInput}
       onTransactedAtInput={setTransactedAtInput}
@@ -183,6 +367,12 @@ export default function SpendRecordsRoutePage() {
       onStartEditing={startEditing}
       onCancelEditing={resetForm}
       onDelete={removeRecord}
+      onImportFileChange={handleImportFile}
+      onRequestPreview={requestPreview}
+      onToggleFingerprint={toggleFingerprint}
+      onSelectAllFingerprints={selectAllFingerprints}
+      onClearSelectedFingerprints={clearSelectedFingerprints}
+      onCommitImport={commitImport}
       onBack={() => void navigate('/dashboard')}
     />
   )

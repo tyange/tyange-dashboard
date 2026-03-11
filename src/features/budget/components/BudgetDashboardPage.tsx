@@ -1,7 +1,7 @@
 import { useNavigate } from '@solidjs/router'
 import { createMemo, createSignal, onMount } from 'solid-js'
 import { fetchBudgetSummary } from '../api'
-import { isBudgetNotConfiguredError } from '../errors'
+import { getApiErrorStatus, isBudgetNotConfiguredError } from '../errors'
 import type { BudgetSummary } from '../types'
 import BudgetSetupRequiredState from './BudgetSetupRequiredState'
 import WeeklyBudgetCard from './WeeklyBudgetCard'
@@ -16,6 +16,14 @@ const emptySummary: BudgetSummary = {
   usage_rate: 0,
   alert: false,
   alert_threshold: 0,
+}
+
+function getSummaryErrorMessage(error: unknown) {
+  if (getApiErrorStatus(error) === 401) {
+    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+  }
+
+  return (error as Error).message
 }
 
 export default function BudgetDashboardPage() {
@@ -38,7 +46,7 @@ export default function BudgetDashboardPage() {
         setRequiresBudgetSetup(true)
         setSummary(null)
       } else {
-        setErrorMessage((error as Error).message)
+        setErrorMessage(getSummaryErrorMessage(error))
       }
     } finally {
       setLoading(false)
@@ -56,7 +64,12 @@ export default function BudgetDashboardPage() {
 
   return (
     <section aria-label="Dashboard">
-      {requiresBudgetSetup() && <BudgetSetupRequiredState />}
+      {requiresBudgetSetup() && (
+        <BudgetSetupRequiredState
+          title="활성 예산을 먼저 등록해주세요."
+          description="현재 활성 기간 예산이 없습니다. 예산 설정 화면에서 기간 총예산을 생성하거나 엑셀 계산 결과를 검토한 뒤 직접 저장해주세요."
+        />
+      )}
 
       {!requiresBudgetSetup() && errorMessage() && (
         <div class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

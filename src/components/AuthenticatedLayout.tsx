@@ -31,33 +31,40 @@ export default function AuthenticatedLayout(props: ParentProps) {
 
   return (
     <>
-      <nav
-        aria-label="Authenticated navigation"
-        class={`fixed left-1/2 top-[calc(env(safe-area-inset-top)+1rem)] z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-black/60 px-2 py-2 backdrop-blur-xl transition-all duration-300 ease-out ${
-          isScrolled() ? 'bg-black/80 shadow-lg shadow-black/30' : ''
-        }`}
-      >
-        <A href="/dashboard" class={navLinkClass('/dashboard')}>
-          예산
-        </A>
-        <A href="/budget/setup" class={navLinkClass('/budget/setup')}>
-          예산 설정
-        </A>
-        <A href="/api-keys" class={navLinkClass('/api-keys')}>
-          API 키
-        </A>
-        <Show when={auth.isAuthenticated()}>
-          <button
-            type="button"
-            onClick={logout}
-            class="inline-flex items-center rounded-full px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white"
-          >
-            로그아웃
-          </button>
-        </Show>
-      </nav>
+      <div class="fixed inset-x-0 top-[calc(env(safe-area-inset-top)+1rem)] z-40 px-4 md:px-8">
+        <nav
+          aria-label="Authenticated navigation"
+          class={`mx-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-[1.75rem] border border-white/10 bg-black/60 px-3 py-3 backdrop-blur-xl transition-all duration-300 ease-out ${
+            isScrolled() ? 'bg-black/80 shadow-lg shadow-black/30' : ''
+          }`}
+        >
+          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+            <A href="/dashboard" class={navLinkClass('/dashboard')}>
+              예산
+            </A>
+            <A href="/records" class={navLinkClass('/records')}>
+              소비 기록
+            </A>
+            <A href="/budget/setup" class={navLinkClass('/budget/setup')}>
+              예산 설정
+            </A>
+            <A href="/api-keys" class={navLinkClass('/api-keys')}>
+              API 키
+            </A>
+          </div>
+          <Show when={auth.isAuthenticated()}>
+            <button
+              type="button"
+              onClick={logout}
+              class="shrink-0 rounded-full px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white"
+            >
+              로그아웃
+            </button>
+          </Show>
+        </nav>
+      </div>
 
-      <main class="mx-auto w-full max-w-2xl flex-1 p-4 pt-24 md:p-8 md:pt-28">{props.children}</main>
+      <main class="mx-auto w-full max-w-6xl flex-1 p-4 pt-28 md:p-8 md:pt-32">{props.children}</main>
     </>
   )
 }
