@@ -47,7 +47,7 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - 대시보드는 `GET /budget` 단일 응답으로 활성 기간 총예산을 표시하고, 404는 "활성 예산 없음" 상태로 처리한다
 - 예산 설정 페이지는 `GET /budget`으로 활성 기간 예산을 확인하고, `POST /budget/plan` 또는 `PUT /budget`으로 명시적으로 저장한다
 - 예산 설정 페이지는 엑셀 기반 예산 계산/업로드 UI를 노출하지 않고, 활성 기간 예산 생성·수정만 담당한다
-- 소비 기록 페이지는 `GET /budget/spending` 응답의 `weeks[]` 그룹을 그대로 렌더링하고 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id` 후 `GET /budget` + `GET /budget/spending` 재조회로 요약과 목록을 동기화한다
+- 소비 기록 페이지는 `GET /budget/spending` 응답의 `weeks[]` 그룹을 그대로 렌더링하고 `POST /budget/spending`, `PUT /budget/spending/:record_id`, `DELETE /budget/spending/:record_id`, `DELETE /budget/spending` 후 `GET /budget` + `GET /budget/spending` 재조회로 요약과 목록을 동기화한다
 - 소비 기록 페이지 초기 진입은 `GET /budget`을 먼저 확인하고, 그 응답이 성공한 뒤 `GET /budget/spending` 404가 오면 "기록 없음"으로 간주해 빈 목록 상태를 렌더링한다
 - 소비 기록 페이지는 `POST /budget/spending/import-preview` -> 사용자 선택 -> `POST /budget/spending/import-commit` 흐름으로 신한카드 XLS 가져오기를 지원하며, 기본 선택은 `status=new` 행만 허용한다
 - `tyange-cms-api` `6663a47` 이후 예산 총지출은 거래 원장에서 자동 계산되며, 예산 생성/수정 요청에 `total_spent`를 보내면 400으로 거절된다

@@ -162,6 +162,18 @@ export async function deleteSpendRecord(recordId: number): Promise<void> {
   }
 }
 
+export async function deleteAllSpendRecords(): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/budget/spending`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  })
+
+  if (!response.ok) {
+    const message = await getErrorMessage(response, '소비 기록 일괄 삭제 실패')
+    throw new Error(`API ${response.status}: ${message}`)
+  }
+}
+
 export async function importSpendingPreview(file: File): Promise<SpendingImportPreviewResponse> {
   const formData = new FormData()
   formData.append('file', file)

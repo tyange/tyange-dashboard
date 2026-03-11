@@ -2,6 +2,7 @@ import { useNavigate } from '@solidjs/router'
 import { createSignal, onMount } from 'solid-js'
 import {
   createSpendRecord,
+  deleteAllSpendRecords,
   deleteSpendRecord,
   fetchBudgetSummary,
   fetchSpendingGroups,
@@ -85,6 +86,7 @@ export default function SpendRecordsRoutePage() {
   const [loading, setLoading] = createSignal(true)
   const [saving, setSaving] = createSignal(false)
   const [deletingRecordId, setDeletingRecordId] = createSignal<number | null>(null)
+  const [deletingAll, setDeletingAll] = createSignal(false)
   const [editingRecordId, setEditingRecordId] = createSignal<number | null>(null)
   const [amountInput, setAmountInput] = createSignal('')
   const [merchantInput, setMerchantInput] = createSignal('')
@@ -236,7 +238,7 @@ export default function SpendRecordsRoutePage() {
   }
 
   const removeRecord = async (recordId: number) => {
-    if (deletingRecordId() !== null) return
+    if (deletingRecordId() !== null || deletingAll()) return
 
     setDeletingRecordId(recordId)
     setErrorMessage(null)
@@ -253,6 +255,33 @@ export default function SpendRecordsRoutePage() {
       setErrorMessage(getMutationErrorMessage(error))
     } finally {
       setDeletingRecordId(null)
+    }
+  }
+
+  const removeAllRecords = async () => {
+    if (deletingAll() || deletingRecordId() !== null) return
+
+    const groups = spendingGroups()
+    const totalRecordCount = groups?.weeks.reduce((sum, group) => sum + group.record_count, 0) ?? 0
+
+    if (totalRecordCount === 0) return
+
+    const confirmed = window.confirm(`현재 소비 기록 ${totalRecordCount}건을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)
+    if (!confirmed) return
+
+    setDeletingAll(true)
+    setErrorMessage(null)
+    setSuccessMessage(null)
+
+    try {
+      await deleteAllSpendRecords()
+      resetForm()
+      setSuccessMessage('소비 기록을 전체 삭제했습니다.')
+      await loadRecords({ preserveImportFeedback: true })
+    } catch (error) {
+      setErrorMessage(getMutationErrorMessage(error))
+    } finally {
+      setDeletingAll(false)
     }
   }
 
@@ -369,6 +398,7 @@ export default function SpendRecordsRoutePage() {
       loading={loading()}
       saving={saving()}
       deletingRecordId={deletingRecordId()}
+      deletingAll={deletingAll()}
       editingRecordId={editingRecordId()}
       amountInput={amountInput()}
       merchantInput={merchantInput()}
@@ -390,6 +420,7 @@ export default function SpendRecordsRoutePage() {
       onStartEditing={startEditing}
       onCancelEditing={resetForm}
       onDelete={removeRecord}
+      onDeleteAll={removeAllRecords}
       onImportFileChange={handleImportFile}
       onRequestPreview={requestPreview}
       onToggleFingerprint={toggleFingerprint}

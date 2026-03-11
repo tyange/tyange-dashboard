@@ -17,6 +17,7 @@ export type SpendRecordsPageProps = {
   loading: boolean
   saving: boolean
   deletingRecordId: number | null
+  deletingAll: boolean
   editingRecordId: number | null
   amountInput: string
   merchantInput: string
@@ -38,6 +39,7 @@ export type SpendRecordsPageProps = {
   onStartEditing: (record: SpendRecord) => void
   onCancelEditing: () => void
   onDelete: (recordId: number) => void
+  onDeleteAll: () => void
   onImportFileChange: (file: File | null) => void
   onRequestPreview: () => void
   onToggleFingerprint: (fingerprint: string, checked: boolean) => void
@@ -106,6 +108,7 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
   const allSelectableChecked = () =>
     props.selectableFingerprintCount > 0 && props.selectedFingerprints.length === props.selectableFingerprintCount
   const hasSummary = () => props.fromDate !== '-' && props.toDate !== '-'
+  const totalRecordCount = () => props.weekGroups.reduce((sum, group) => sum + group.record_count, 0)
 
   return (
     <article aria-label="소비 기록 페이지" class="space-y-4">
@@ -389,6 +392,21 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
       </section>
 
       <section class={card}>
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-foreground">소비 기록 목록</h2>
+            <p class="mt-1 text-xs text-muted-foreground">현재 활성 기간에 기록된 소비 내역 {totalRecordCount()}건</p>
+          </div>
+          <button
+            type="button"
+            class={dangerButton}
+            onClick={props.onDeleteAll}
+            disabled={props.loading || props.saving || props.deletingRecordId !== null || props.deletingAll || totalRecordCount() === 0}
+          >
+            {props.deletingAll ? '전체 삭제 중...' : '전체 삭제'}
+          </button>
+        </div>
+
         <Show when={!props.loading} fallback={<p class="text-sm text-muted-foreground">소비 기록을 불러오는 중...</p>}>
           <Show when={props.weekGroups.length > 0} fallback={<p class="text-sm text-muted-foreground">소비 기록이 없습니다.</p>}>
             <div class="space-y-5">
@@ -424,7 +442,7 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                                   type="button"
                                   class={dangerButton}
                                   onClick={() => props.onDelete(record.record_id)}
-                                  disabled={props.deletingRecordId !== null}
+                                  disabled={props.deletingRecordId !== null || props.deletingAll}
                                 >
                                   {props.deletingRecordId === record.record_id ? '삭제 중...' : '삭제'}
                                 </button>
