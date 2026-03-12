@@ -9,6 +9,7 @@ import ApiKeysPage from './features/api-keys/components/ApiKeysPage'
 import BudgetDashboardPage from './features/budget/components/BudgetDashboardPage'
 import BudgetSetupPage from './features/budget/components/BudgetSetupPage'
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
+import NotificationsPage from './features/notifications/components/NotificationsPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
@@ -67,6 +68,14 @@ function App() {
           component={() => (
             <ProtectedAppShell>
               <ApiKeysPage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/notifications"
+          component={() => (
+            <ProtectedAppShell>
+              <NotificationsPage />
             </ProtectedAppShell>
           )}
         />

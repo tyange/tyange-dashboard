@@ -1,6 +1,6 @@
 # Tyange Dashboard Memory
 
-Last updated: 2026-03-11 (Asia/Seoul)
+Last updated: 2026-03-12 (Asia/Seoul)
 
 ## Project Snapshot
 - Frontend: SolidJS + TypeScript + Vite
@@ -14,6 +14,7 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Build: `bun run build`
 - Preview build: `bun run preview`
 - Test: `bun run test`
+- E2E: `bun run test:e2e`
 
 ## Environment Notes
 - Required runtime env var: `VITE_CMS_API_BASE_URL`
@@ -27,8 +28,10 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Public pages: `src/pages/*`
 - Authenticated layout: `src/components/AuthenticatedLayout.tsx`
 - API key management UI: `src/features/api-keys/*`
+- Notifications/RSS management UI: `src/features/notifications/*`
 - Budget domain: `src/features/budget/*`
 - Main API layer: `src/features/budget/api.ts`
+- Custom PWA service worker: `src/sw.ts`
 - Budget dashboard route UI: `src/features/budget/components/BudgetDashboardPage.tsx`
 - Spend records route UI: `src/features/budget/components/SpendRecordsRoutePage.tsx`
 - Budget setup route UI: `src/features/budget/components/BudgetSetupPage.tsx`
@@ -40,10 +43,14 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
 - Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
 - Protected API key management page lives at `/api-keys` and manages only the currently logged-in user's keys
+- Protected notifications page lives at `/notifications` and manages the current user's RSS subscriptions plus current-browser web push registration
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
-- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, spending records, budget setup, and API key management entries
+- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, spending records, budget setup, API key management, and notifications entries
 - API errors are surfaced in UI as a top error alert block
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
+- 알림 관리 페이지는 초기 진입 시 `/push/public-key`, `/push/subscriptions`, `/rss-sources`를 함께 조회하고, 브라우저 로컬 `PushSubscription`과 서버 저장 구독을 정합해 현재 브라우저 상태를 표시한다
+- `/push/public-key`의 503은 서버 미설정 정상 분기이며, 알림 페이지는 이를 `unavailable` 상태로 처리해 푸시 등록 CTA를 비활성화하고 안내 문구를 보여준다
+- 웹 푸시는 Vite PWA `injectManifest` 기반 커스텀 서비스 워커(`src/sw.ts`)에서 `push`와 `notificationclick`을 처리하며, 페이지 컴포넌트에는 서비스 워커 로직을 넣지 않는다
 - 대시보드는 `GET /budget` 단일 응답으로 활성 기간 총예산을 표시하고, 404는 "활성 예산 없음" 상태로 처리한다
 - 예산 설정 페이지는 `GET /budget`으로 활성 기간 예산을 확인하고, `POST /budget/plan` 또는 `PUT /budget`으로 명시적으로 저장한다
 - 예산 설정 페이지는 엑셀 기반 예산 계산/업로드 UI를 노출하지 않고, 활성 기간 예산 생성·수정만 담당한다
@@ -70,6 +77,7 @@ Last updated: 2026-03-11 (Asia/Seoul)
 - Prefer minimal, targeted edits over broad refactors
 - Preserve Korean UI labels/messages unless explicitly requested to change
 - When adding API calls, keep consistent error pattern: `API ${status}: ${bodyText || fallbackMessage}`
+- Vitest unit runs exclude `tests/e2e/**`; browser E2E coverage stays on Playwright via `bun run test:e2e`
 
 ## Outstanding TODOs
 - Revisit refresh-token handling when access token expiry UX becomes relevant

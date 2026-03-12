@@ -54,6 +54,9 @@ export default function AuthenticatedLayout(props: ParentProps) {
               <A href="/api-keys" class={navLinkClass('/api-keys')}>
                 API 키
               </A>
+              <A href="/notifications" class={navLinkClass('/notifications')}>
+                알림
+              </A>
             </div>
             <Show when={auth.isAuthenticated()}>
               <button
