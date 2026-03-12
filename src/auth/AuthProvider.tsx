@@ -3,6 +3,7 @@ import type { JSX, ParentProps } from 'solid-js'
 import {
   clearStoredSession,
   fetchMe,
+  googleLoginRequest,
   loadStoredSession,
   loginRequest,
   storeSession,
@@ -16,6 +17,7 @@ export type AuthContextValue = {
   isAuthenticated: () => boolean
   session: () => AuthSession | null
   login: (userId: string, password: string) => Promise<void>
+  loginWithGoogle: (idToken: string) => Promise<void>
   logout: () => void
 }
 
@@ -24,6 +26,12 @@ const AuthContext = createContext<AuthContextValue>()
 export function AuthProvider(props: ParentProps): JSX.Element {
   const [status, setStatus] = createSignal<AuthStatus>('unknown')
   const [session, setSession] = createSignal<AuthSession | null>(null)
+
+  const applyAuthenticatedSession = (nextSession: AuthSession) => {
+    storeSession(nextSession)
+    setSession(nextSession)
+    setStatus('authenticated')
+  }
 
   onMount(() => {
     const storedSession = loadStoredSession()
@@ -41,9 +49,7 @@ export function AuthProvider(props: ParentProps): JSX.Element {
           user_role: me.user_role,
         }
 
-        storeSession(nextSession)
-        setSession(nextSession)
-        setStatus('authenticated')
+        applyAuthenticatedSession(nextSession)
       })
       .catch(() => {
         clearStoredSession()
@@ -58,9 +64,11 @@ export function AuthProvider(props: ParentProps): JSX.Element {
     isAuthenticated: () => status() === 'authenticated',
     login: async (userId, password) => {
       const nextSession = await loginRequest({ user_id: userId, password })
-      storeSession(nextSession)
-      setSession(nextSession)
-      setStatus('authenticated')
+      applyAuthenticatedSession(nextSession)
+    },
+    loginWithGoogle: async (idToken) => {
+      const nextSession = await googleLoginRequest({ id_token: idToken })
+      applyAuthenticatedSession(nextSession)
     },
     logout: () => {
       clearStoredSession()

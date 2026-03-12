@@ -26,11 +26,17 @@ jobs:
         run: |
           test -n "${{ vars.DEPLOY_PATH }}" || (echo "Missing variable: DEPLOY_PATH" && exit 1)
           test -n "${{ vars.VITE_CMS_API_BASE_URL }}" || (echo "Missing variable: VITE_CMS_API_BASE_URL" && exit 1)
+          test -n "${{ vars.VITE_GOOGLE_CLIENT_ID }}" || (echo "Missing variable: VITE_GOOGLE_CLIENT_ID" && exit 1)
+
+      - name: Create production env file
+        run: |
+          cat <<EOF > .env.production
+          VITE_CMS_API_BASE_URL=${{ vars.VITE_CMS_API_BASE_URL }}
+          VITE_GOOGLE_CLIENT_ID=${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          EOF
 
       - name: Build
         run: bun run build
-        env:
-          VITE_CMS_API_BASE_URL: ${{ vars.VITE_CMS_API_BASE_URL }}
 
       - name: Upload build via SCP
         uses: appleboy/scp-action@v0.1.7

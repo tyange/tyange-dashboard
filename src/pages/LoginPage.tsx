@@ -1,5 +1,6 @@
 import { A, Navigate, useNavigate, useSearchParams } from '@solidjs/router'
-import { Show, createSignal } from 'solid-js'
+import { Show, createSignal, onCleanup, onMount } from 'solid-js'
+import { getGoogleClientId, loadGoogleIdentityScript, renderGoogleSignInButton } from '../auth/google'
 import { useAuth } from '../auth/AuthProvider'
 
 export default function LoginPage() {
@@ -9,15 +10,30 @@ export default function LoginPage() {
   const [userId, setUserId] = createSignal('')
   const [password, setPassword] = createSignal('')
   const [isSubmitting, setIsSubmitting] = createSignal(false)
+  const [isGoogleLoading, setIsGoogleLoading] = createSignal(false)
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = createSignal(false)
+  const [googleStatusMessage, setGoogleStatusMessage] = createSignal<string | null>(null)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
+  const googleClientId = getGoogleClientId()
+  const isAnySubmitting = () => isSubmitting() || isGoogleSubmitting()
+  let googleButtonContainer: HTMLDivElement | undefined
 
   const nextPath = () => {
     const requested = searchParams.next
     return requested && requested.startsWith('/') ? requested : '/dashboard'
   }
 
-  const completeLogin = async () => {
-    if (isSubmitting()) {
+  const finishLogin = () => {
+    void navigate(nextPath(), { replace: true })
+  }
+
+  const handleLoginError = (error: unknown, fallbackMessage: string) => {
+    const message = error instanceof Error ? error.message : fallbackMessage
+    setErrorMessage(message)
+  }
+
+  const completePasswordLogin = async () => {
+    if (isAnySubmitting()) {
       return
     }
 
@@ -26,14 +42,85 @@ export default function LoginPage() {
 
     try {
       await auth.login(userId().trim(), password())
-      void navigate(nextPath(), { replace: true })
+      finishLogin()
     } catch (error) {
-      const message = error instanceof Error ? error.message : '로그인 실패'
-      setErrorMessage(message)
+      handleLoginError(error, '로그인 실패')
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  onMount(() => {
+    if (!googleClientId) {
+      setGoogleStatusMessage('Google 로그인을 사용하려면 클라이언트 설정이 필요해요.')
+      return
+    }
+
+    if (!googleButtonContainer) {
+      setGoogleStatusMessage('Google 로그인 버튼을 준비하지 못했어요. 새로고침 후 다시 시도해주세요.')
+      return
+    }
+
+    let disposed = false
+    let cleanupGoogleButton: (() => void) | undefined
+
+    setIsGoogleLoading(true)
+    setGoogleStatusMessage(null)
+
+    void loadGoogleIdentityScript()
+      .then(() => {
+        if (disposed || !googleButtonContainer) {
+          return
+        }
+
+        cleanupGoogleButton = renderGoogleSignInButton({
+          clientId: googleClientId,
+          container: googleButtonContainer,
+          onCredential: async (response) => {
+            if (isAnySubmitting()) {
+              return
+            }
+
+            if (!response.credential?.trim()) {
+              setErrorMessage('Google 로그인 정보를 확인하지 못했어요. 다시 시도해주세요.')
+              return
+            }
+
+            setIsGoogleSubmitting(true)
+            setErrorMessage(null)
+
+            try {
+              await auth.loginWithGoogle(response.credential)
+              finishLogin()
+            } catch (error) {
+              handleLoginError(error, 'Google 로그인에 실패했어요. 잠시 후 다시 시도해주세요.')
+            } finally {
+              setIsGoogleSubmitting(false)
+            }
+          },
+        })
+
+        setGoogleStatusMessage(null)
+      })
+      .catch((error) => {
+        if (disposed) {
+          return
+        }
+
+        const message = error instanceof Error ? error.message : 'Google 로그인 준비에 실패했어요. 잠시 후 다시 시도해주세요.'
+        setGoogleStatusMessage(message)
+      })
+      .finally(() => {
+        if (!disposed) {
+          setIsGoogleLoading(false)
+        }
+      })
+
+    onCleanup(() => {
+      disposed = true
+      cleanupGoogleButton?.()
+    })
+  })
 
   return (
     <Show when={!auth.isAuthenticated()} fallback={<Navigate href={nextPath()} />}>
@@ -47,7 +134,7 @@ export default function LoginPage() {
               class="mt-8 space-y-4"
               onSubmit={async (event) => {
                 event.preventDefault()
-                await completeLogin()
+                await completePasswordLogin()
               }}
             >
               <label class="block">
@@ -57,6 +144,7 @@ export default function LoginPage() {
                   value={userId()}
                   onInput={(event) => setUserId(event.currentTarget.value)}
                   placeholder="user_id"
+                  disabled={isAnySubmitting()}
                   class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
                 />
               </label>
@@ -67,6 +155,7 @@ export default function LoginPage() {
                   value={password()}
                   onInput={(event) => setPassword(event.currentTarget.value)}
                   placeholder="••••••••"
+                  disabled={isAnySubmitting()}
                   class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
                 />
               </label>
@@ -77,6 +166,35 @@ export default function LoginPage() {
                   </div>
                 )}
               </Show>
+              <div class="pt-2">
+                <div class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                  <span class="h-px flex-1 bg-border" />
+                  <span>또는</span>
+                  <span class="h-px flex-1 bg-border" />
+                </div>
+                <div class="mt-4 rounded-3xl border border-border/80 bg-card/60 p-3 shadow-[0_20px_40px_rgba(2,6,23,0.2)]">
+                  <div class="relative min-h-[52px]">
+                    <div ref={googleButtonContainer} class="flex min-h-[52px] w-full items-center justify-center" />
+                    <Show when={isGoogleLoading()}>
+                      <div class="absolute inset-0 flex items-center justify-center rounded-2xl border border-border/80 bg-background/80 px-4 text-sm text-muted-foreground backdrop-blur-sm">
+                        Google 로그인 준비 중...
+                      </div>
+                    </Show>
+                    <Show when={isGoogleSubmitting()}>
+                      <div class="absolute inset-0 flex items-center justify-center rounded-2xl border border-border/80 bg-background/85 px-4 text-sm font-medium text-foreground backdrop-blur-sm">
+                        Google 계정을 확인하는 중...
+                      </div>
+                    </Show>
+                  </div>
+                  <Show when={googleStatusMessage()}>
+                    {(message) => (
+                      <p class="mt-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                        {message()}
+                      </p>
+                    )}
+                  </Show>
+                </div>
+              </div>
               <div class="mt-8 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                   <A href="/" class="text-sm font-medium text-accent transition-colors hover:text-foreground">
@@ -88,7 +206,7 @@ export default function LoginPage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={isSubmitting()}
+                  disabled={isAnySubmitting()}
                   class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
                 >
                   {isSubmitting() ? '로그인 중...' : '로그인하기'}

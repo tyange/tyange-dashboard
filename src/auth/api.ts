@@ -5,7 +5,11 @@ export type LoginPayload = {
   password: string
 }
 
-export type LoginResponse = {
+export type GoogleLoginPayload = {
+  id_token: string
+}
+
+export type AuthTokenResponse = {
   access_token: string
   refresh_token: string
   user_role: string
@@ -16,7 +20,7 @@ export type MeResponse = {
   user_role: string
 }
 
-export type AuthSession = LoginResponse & {
+export type AuthSession = AuthTokenResponse & {
   user_id: string
 }
 
@@ -28,6 +32,67 @@ type SignupResponse = {
 
 export function getApiBaseUrl() {
   return (import.meta.env.VITE_CMS_API_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '')
+}
+
+async function readErrorMessage(response: Response, fallbackMessage: string) {
+  const bodyText = await response.text()
+
+  if (!bodyText) {
+    return fallbackMessage
+  }
+
+  try {
+    const payload = JSON.parse(bodyText) as { message?: string; statusMessage?: string }
+    return payload.message || payload.statusMessage || bodyText
+  } catch {
+    return bodyText
+  }
+}
+
+async function createAuthSession(tokens: AuthTokenResponse): Promise<AuthSession> {
+  const me = await fetchMe(tokens.access_token)
+
+  return {
+    ...tokens,
+    user_id: me.user_id,
+  }
+}
+
+async function requestAuthTokens<TPayload>(options: {
+  endpoint: string
+  payload: TPayload
+  fallbackMessage: string
+  networkErrorMessage?: string
+  statusMessages?: Partial<Record<number, string>>
+}) {
+  const { endpoint, payload, fallbackMessage, networkErrorMessage, statusMessages } = options
+
+  let response: Response
+
+  try {
+    response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    if (networkErrorMessage) {
+      throw new Error(networkErrorMessage)
+    }
+
+    throw error
+  }
+
+  if (!response.ok) {
+    const fallback = statusMessages?.[response.status] ?? fallbackMessage
+    const message = statusMessages?.[response.status] ?? (await readErrorMessage(response, fallback))
+    throw new Error(`API ${response.status}: ${message}`)
+  }
+
+  return (await response.json()) as AuthTokenResponse
 }
 
 export function loadStoredSession(): AuthSession | null {
@@ -96,27 +161,28 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
 }
 
 export async function loginRequest(payload: LoginPayload): Promise<AuthSession> {
-  const response = await fetch(`${getApiBaseUrl()}/login`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+  const tokens = await requestAuthTokens({
+    endpoint: '/login',
+    payload,
+    fallbackMessage: '로그인 실패',
   })
 
-  if (!response.ok) {
-    const bodyText = await response.text()
-    throw new Error(`API ${response.status}: ${bodyText || '로그인 실패'}`)
-  }
+  return createAuthSession(tokens)
+}
 
-  const tokens = (await response.json()) as LoginResponse
-  const me = await fetchMe(tokens.access_token)
+export async function googleLoginRequest(payload: GoogleLoginPayload): Promise<AuthSession> {
+  const tokens = await requestAuthTokens({
+    endpoint: '/login/google',
+    payload,
+    fallbackMessage: 'Google 로그인에 실패했어요. 잠시 후 다시 시도해주세요.',
+    networkErrorMessage: '네트워크 상태를 확인한 뒤 다시 시도해주세요.',
+    statusMessages: {
+      401: 'Google 계정을 확인할 수 없어요. 다시 시도해주세요.',
+      409: '이미 다른 방식으로 연결된 계정입니다. 기존 로그인 방법을 사용해주세요.',
+    },
+  })
 
-  return {
-    ...tokens,
-    user_id: me.user_id,
-  }
+  return createAuthSession(tokens)
 }
 
 export async function signupRequest(email: string, password: string): Promise<SignupResponse> {

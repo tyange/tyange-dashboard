@@ -18,7 +18,9 @@ Last updated: 2026-03-12 (Asia/Seoul)
 
 ## Environment Notes
 - Required runtime env var: `VITE_CMS_API_BASE_URL`
+- Google login runtime env var: `VITE_GOOGLE_CLIENT_ID`
 - Local fallback in code: `http://localhost:8080` (`src/features/budget/api.ts`)
+- Local env template: `.env.example`; deploy workflow writes `.env.production` from GitHub Actions variables before build
 - CI expectation: build should fail fast when `VITE_CMS_API_BASE_URL` is missing (README policy)
 
 ## Current Feature Structure
@@ -40,11 +42,13 @@ Last updated: 2026-03-12 (Asia/Seoul)
 - Keep API fetch logic in `src/features/budget/api.ts`
 - Public landing page lives at `/` and only introduces the app plus login guidance
 - Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
+- Login page keeps the existing `user_id` + `password` flow and additionally supports Google Identity Services button login via CMS API `POST /login/google`
 - Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
 - Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
 - Protected API key management page lives at `/api-keys` and manages only the currently logged-in user's keys
 - Protected notifications page lives at `/notifications` and manages the current user's RSS subscriptions plus current-browser web push registration
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
+- Email/password login and Google login both converge on the same stored JWT session shape in `localStorage`
 - Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, spending records, budget setup, API key management, and notifications entries
 - API errors are surfaced in UI as a top error alert block
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API

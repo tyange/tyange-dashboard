@@ -54,8 +54,16 @@ This project deploys to AWS (Lightsail/EC2) as static files served by Nginx.
 
 - `DEPLOY_PATH` (example: `/var/www/tyange-dashboard`)
 - `VITE_CMS_API_BASE_URL` (example: `https://tyange.com/api/cms`)
+- `VITE_GOOGLE_CLIENT_ID` (example: `1234567890-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com`)
 
 If `VITE_CMS_API_BASE_URL` is not set in CI, build is configured to fail fast.
+
+Google 로그인 버튼을 사용하려면 `VITE_GOOGLE_CLIENT_ID`도 함께 설정해야 합니다.
+
+### Local env example
+
+Use [`.env.example`](/Users/tyange/dev/repositories/tyange-dashboard/.env.example) as the base template for local setup.  
+GitHub Actions creates `.env.production` during deploy so the build picks up both `VITE_CMS_API_BASE_URL` and `VITE_GOOGLE_CLIENT_ID`.
 
 ### Server setup (one-time)
 
