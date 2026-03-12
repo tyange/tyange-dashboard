@@ -228,9 +228,20 @@ export async function deletePushSubscription(endpoint: string): Promise<void> {
   }
 }
 
+function extractRssSourceList(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) {
+    return payload
+  }
+
+  const record = asRecord(payload)
+  const sources = record?.sources
+
+  return Array.isArray(sources) ? sources : []
+}
+
 export async function fetchRssSources(): Promise<RssSourceRecord[]> {
   const payload = unwrapApiData(
-    await fetchJsonOrThrow<unknown[] | ApiEnvelope<unknown[]>>(
+    await fetchJsonOrThrow<unknown[] | { sources?: unknown[] } | ApiEnvelope<unknown[] | { sources?: unknown[] }>>(
       `${apiBaseUrl}/rss-sources`,
       {
         headers: getAuthHeaders(),
@@ -239,7 +250,7 @@ export async function fetchRssSources(): Promise<RssSourceRecord[]> {
     ),
   )
 
-  return Array.isArray(payload) ? payload.map(normalizeRssSourceRecord).filter(isRssSourceRecord) : []
+  return extractRssSourceList(payload).map(normalizeRssSourceRecord).filter(isRssSourceRecord)
 }
 
 export async function subscribeRssSource(feedUrl: string): Promise<void> {

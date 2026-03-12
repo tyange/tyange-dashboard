@@ -51,6 +51,7 @@ Last updated: 2026-03-12 (Asia/Seoul)
 - 알림 관리 페이지는 초기 진입 시 `/push/public-key`, `/push/subscriptions`, `/rss-sources`를 함께 조회하고, 브라우저 로컬 `PushSubscription`과 서버 저장 구독을 정합해 현재 브라우저 상태를 표시한다
 - `/push/public-key`의 503은 서버 미설정 정상 분기이며, 알림 페이지는 이를 `unavailable` 상태로 처리해 푸시 등록 CTA를 비활성화하고 안내 문구를 보여준다
 - 웹 푸시는 Vite PWA `injectManifest` 기반 커스텀 서비스 워커(`src/sw.ts`)에서 `push`와 `notificationclick`을 처리하며, 페이지 컴포넌트에는 서비스 워커 로직을 넣지 않는다
+- 개발 서버에서도 알림 등록 플로우를 검증할 수 있도록 Vite PWA `devOptions.enabled`를 켜 둔다
 - 대시보드는 `GET /budget` 단일 응답으로 활성 기간 총예산을 표시하고, 404는 "활성 예산 없음" 상태로 처리한다
 - 예산 설정 페이지는 `GET /budget`으로 활성 기간 예산을 확인하고, `POST /budget/plan` 또는 `PUT /budget`으로 명시적으로 저장한다
 - 예산 설정 페이지는 엑셀 기반 예산 계산/업로드 UI를 노출하지 않고, 활성 기간 예산 생성·수정만 담당한다
