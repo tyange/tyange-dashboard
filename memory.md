@@ -5,6 +5,7 @@ Last updated: 2026-03-12 (Asia/Seoul)
 ## Project Snapshot
 - Frontend: SolidJS + TypeScript + Vite
 - Styling: Tailwind CSS v4 (via `@tailwindcss/vite`)
+- Default UI font: Pretendard
 - Package/runtime: Bun (`bun.lock` present)
 - Deploy target: AWS Lightsail/EC2 static files + Nginx (see `README.md`)
 

@@ -166,33 +166,46 @@ export default function LoginPage() {
                   </div>
                 )}
               </Show>
-              <div class="pt-2">
-                <div class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
-                  <span class="h-px flex-1 bg-border" />
-                  <span>또는</span>
-                  <span class="h-px flex-1 bg-border" />
-                </div>
-                <div class="relative mt-4 min-h-[52px]">
-                  <div ref={googleButtonContainer} class="flex min-h-[52px] w-full items-center justify-center" />
-                  <Show when={isGoogleLoading()}>
-                    <div class="absolute inset-0 flex items-center justify-center px-4 text-sm text-muted-foreground">
-                      Google 로그인 준비 중...
-                    </div>
+              <Show
+                when={googleClientId}
+                fallback={
+                  <Show when={googleStatusMessage()}>
+                    {(message) => (
+                      <p class="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                        {message()}
+                      </p>
+                    )}
                   </Show>
-                  <Show when={isGoogleSubmitting()}>
-                    <div class="absolute inset-0 flex items-center justify-center px-4 text-sm font-medium text-foreground">
-                      Google 계정을 확인하는 중...
-                    </div>
+                }
+              >
+                <div class="pt-2">
+                  <div class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                    <span class="h-px flex-1 bg-border" />
+                    <span>또는</span>
+                    <span class="h-px flex-1 bg-border" />
+                  </div>
+                  <div class="relative mt-4 min-h-[52px]">
+                    <div ref={googleButtonContainer} class="flex min-h-[52px] w-full items-center justify-center" />
+                    <Show when={isGoogleLoading()}>
+                      <div class="absolute inset-0 flex items-center justify-center px-4 text-sm text-muted-foreground">
+                        Google 로그인 준비 중...
+                      </div>
+                    </Show>
+                    <Show when={isGoogleSubmitting()}>
+                      <div class="absolute inset-0 flex items-center justify-center px-4 text-sm font-medium text-foreground">
+                        Google 계정을 확인하는 중...
+                      </div>
+                    </Show>
+                  </div>
+                  <Show when={googleStatusMessage()}>
+                    {(message) => (
+                      <p class="mt-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                        {message()}
+                      </p>
+                    )}
                   </Show>
                 </div>
-                <Show when={googleStatusMessage()}>
-                  {(message) => (
-                    <p class="mt-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                      {message()}
-                    </p>
-                  )}
-                </Show>
-              </div>
+              </Show>
               <div class="mt-8 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                   <A href="/" class="text-sm font-medium text-accent transition-colors hover:text-foreground">
