@@ -1,64 +1,40 @@
-import { For, Show, createMemo, createSignal, onMount } from 'solid-js'
-import { fetchPushPublicKeyState, fetchRssSources, fetchSavedPushSubscriptions } from '../api'
+import { For, Show, createSignal, onMount } from 'solid-js'
+import { fetchFeedItems, fetchPushPublicKeyState, fetchRssSources, fetchSavedPushSubscriptions } from '../api'
+import type { FeedItemRecord } from '../types'
 
-type FeedItem = {
-  source_title: string
-  title: string
-  published_at: string
-  read: boolean
-  saved: boolean
-  item_url: string
+function formatFeedDateTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
 }
 
-const placeholderFeedItems: FeedItem[] = [
-  {
-    source_title: "Tyange's Blog",
-    title: '알림 허브 UI를 정리하면서 바꾼 점들',
-    published_at: '2026-03-19 09:20',
-    read: false,
-    saved: true,
-    item_url: 'https://blog.tyange.com/posts/alert-hub-ui',
-  },
-  {
-    source_title: "Tyange's Blog",
-    title: 'RSS 구독 관리 화면을 더 단순하게 만드는 방법',
-    published_at: '2026-03-18 17:40',
-    read: false,
-    saved: false,
-    item_url: 'https://blog.tyange.com/posts/rss-subscription-ui',
-  },
-  {
-    source_title: 'Product Notes',
-    title: '설정 화면은 언제 별도 메뉴로 분리하는 게 좋을까',
-    published_at: '2026-03-18 10:05',
-    read: true,
-    saved: false,
-    item_url: 'https://example.com/product-notes/settings-split',
-  },
-  {
-    source_title: 'Frontend Weekly',
-    title: '테이블 중심 UI를 덜 딱딱하게 보이게 하는 디테일',
-    published_at: '2026-03-17 08:30',
-    read: true,
-    saved: true,
-    item_url: 'https://example.com/frontend-weekly/table-ui-details',
-  },
-]
-
 export default function FeedHomePage() {
+  const [items, setItems] = createSignal<FeedItemRecord[]>([])
   const [rssCount, setRssCount] = createSignal(0)
+  const [unreadCount, setUnreadCount] = createSignal(0)
   const [notificationsEnabled, setNotificationsEnabled] = createSignal(false)
   const [loading, setLoading] = createSignal(true)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
 
   onMount(() => {
     void Promise.all([
+      fetchFeedItems(),
       fetchRssSources(),
       fetchPushPublicKeyState(),
       fetchSavedPushSubscriptions(),
     ])
-      .then(([sources, publicKeyState, subscriptions]) => {
+      .then(([feedResponse, sources, publicKeyState, subscriptions]) => {
+        setItems(feedResponse.items)
         setRssCount(sources.length)
+        setUnreadCount(feedResponse.summary.unread_count)
         setNotificationsEnabled(publicKeyState.availability === 'available' && subscriptions.length > 0)
         setErrorMessage(null)
       })
@@ -70,7 +46,6 @@ export default function FeedHomePage() {
       })
   })
 
-  const unreadCount = createMemo(() => placeholderFeedItems.filter((item) => !item.read).length)
   const statCell = 'rounded-2xl border border-border/70 bg-background/78 px-4 py-4'
 
   return (
@@ -95,7 +70,7 @@ export default function FeedHomePage() {
           </div>
           <div class={statCell}>
             <p class="text-xs uppercase tracking-[0.16em] text-muted-foreground">읽지 않음</p>
-            <p class="mt-2 text-3xl font-semibold text-foreground">{placeholderFeedItems.length > 0 ? unreadCount() : 0}개</p>
+            <p class="mt-2 text-3xl font-semibold text-foreground">{loading() ? '-' : `${unreadCount()}개`}</p>
           </div>
           <div class={statCell}>
             <p class="text-xs uppercase tracking-[0.16em] text-muted-foreground">알림</p>
@@ -107,10 +82,6 @@ export default function FeedHomePage() {
       <section class="border-t border-border/70 pt-8">
         <div class="mb-5">
           <h2 class="text-2xl font-semibold tracking-tight text-foreground">목록</h2>
-        </div>
-
-        <div class="mb-4 rounded-2xl border border-sky-400/24 bg-sky-500/8 px-4 py-3 text-sm text-sky-700">
-          검토용 더미 데이터입니다. 실제 새 글 API가 연결되면 이 목록은 서버 데이터로 교체됩니다.
         </div>
 
         <div class="overflow-x-auto rounded-[1.25rem] border border-border/70">
@@ -126,7 +97,7 @@ export default function FeedHomePage() {
             </thead>
             <tbody class="bg-card/65">
               <Show
-                when={placeholderFeedItems.length > 0}
+                when={items().length > 0}
                 fallback={
                   <tr>
                     <td colspan="5" class="px-4 py-8 text-center text-muted-foreground">
@@ -135,7 +106,7 @@ export default function FeedHomePage() {
                   </tr>
                 }
               >
-                <For each={placeholderFeedItems}>
+                <For each={items()}>
                   {(item) => (
                     <tr class="border-t border-border/60">
                       <td class="px-4 py-3 align-middle text-foreground">
@@ -144,11 +115,18 @@ export default function FeedHomePage() {
                         </span>
                       </td>
                       <td class="px-4 py-3 align-middle text-foreground">
-                        <a href={item.item_url} target="_blank" rel="noreferrer" class="hover:text-accent">
-                          {item.title}
-                        </a>
+                        <Show
+                          when={item.item_url}
+                          fallback={<span>{item.title}</span>}
+                        >
+                          {(itemUrl) => (
+                            <a href={itemUrl()} target="_blank" rel="noreferrer" class="hover:text-accent">
+                              {item.title}
+                            </a>
+                          )}
+                        </Show>
                       </td>
-                      <td class="px-4 py-3 align-middle text-muted-foreground">{item.published_at}</td>
+                      <td class="px-4 py-3 align-middle text-muted-foreground">{formatFeedDateTime(item.published_at)}</td>
                       <td class="px-4 py-3 align-middle">
                         <span
                           class={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${

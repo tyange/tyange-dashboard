@@ -2,6 +2,9 @@ import { createAuthorizedHeaders, getApiBaseUrl, getRequiredAccessToken } from '
 import { getApiErrorStatus } from '../budget/errors'
 import type {
   ApiEnvelope,
+  FeedItemsResponse,
+  FeedItemRecord,
+  FeedSummary,
   PushPublicKeyState,
   PushPublicKeyResponse,
   PushSubscriptionPayload,
@@ -147,6 +150,52 @@ function isRssSourceRecord(value: RssSourceRecord | null): value is RssSourceRec
   return value !== null
 }
 
+function normalizeFeedItemRecord(value: unknown): FeedItemRecord | null {
+  const record = asRecord(value)
+  if (!record) {
+    return null
+  }
+
+  const itemId = readStringId(record, ['item_id', 'id'])
+  const sourceId = readStringId(record, ['source_id'])
+  const sourceTitle = readNullableString(record, 'source_title')
+  const title = readNullableString(record, 'title')
+  const publishedAt = readNullableString(record, 'published_at')
+
+  if (!itemId || !sourceId || !sourceTitle || !title || !publishedAt) {
+    return null
+  }
+
+  return {
+    item_id: itemId,
+    source_id: sourceId,
+    source_title: sourceTitle,
+    title,
+    published_at: publishedAt,
+    item_url: readNullableString(record, 'item_url'),
+    read: Boolean(record.read),
+    saved: Boolean(record.saved),
+  }
+}
+
+function normalizeFeedItemsResponse(value: unknown): FeedItemsResponse {
+  const record = asRecord(value)
+  const summaryRecord = asRecord(record?.summary)
+  const itemsRaw = Array.isArray(record?.items) ? record.items : []
+
+  const summary: FeedSummary = {
+    total_count:
+      typeof summaryRecord?.total_count === 'number' ? summaryRecord.total_count : 0,
+    unread_count:
+      typeof summaryRecord?.unread_count === 'number' ? summaryRecord.unread_count : 0,
+  }
+
+  return {
+    items: itemsRaw.map(normalizeFeedItemRecord).filter((item): item is FeedItemRecord => item !== null),
+    summary,
+  }
+}
+
 export async function fetchPushPublicKey(): Promise<string> {
   const payload = unwrapApiData(
     await fetchJsonOrThrow<PushPublicKeyResponse | ApiEnvelope<PushPublicKeyResponse>>(
@@ -278,4 +327,18 @@ export async function unsubscribeRssSource(sourceId: string): Promise<void> {
     const message = await getErrorMessage(response, 'RSS 구독 해제 실패')
     throw new Error(`API ${response.status}: ${message}`)
   }
+}
+
+export async function fetchFeedItems(limit = 20): Promise<FeedItemsResponse> {
+  const payload = unwrapApiData(
+    await fetchJsonOrThrow<unknown | ApiEnvelope<unknown>>(
+      `${apiBaseUrl}/feed/items?limit=${limit}`,
+      {
+        headers: getAuthHeaders(),
+      },
+      '새 글 목록 조회 실패',
+    ),
+  )
+
+  return normalizeFeedItemsResponse(payload)
 }

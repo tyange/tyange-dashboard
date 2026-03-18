@@ -62,6 +62,27 @@ export type RssSourceRecord = {
   raw: Record<string, unknown>
 }
 
+export type FeedItemRecord = {
+  item_id: string
+  source_id: string
+  source_title: string
+  title: string
+  published_at: string
+  item_url: string | null
+  read: boolean
+  saved: boolean
+}
+
+export type FeedSummary = {
+  total_count: number
+  unread_count: number
+}
+
+export type FeedItemsResponse = {
+  items: FeedItemRecord[]
+  summary: FeedSummary
+}
+
 export type PushSupportState = {
   supported: boolean
   reason?: string

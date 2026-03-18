@@ -50,6 +50,7 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
 - Protected pages live at `/dashboard`, `/subscriptions`, `/settings`, and `/records`; unauthenticated access redirects to `/login?next=...`
 - Protected default home at `/dashboard` is the notifications feed home; primary navigation is `새 글`, `구독`, `설정`
+- Feed home at `/dashboard` uses authenticated `GET /feed/items` and shows aggregated RSS items plus unread summary
 - Legacy `/notifications` redirects to `/subscriptions`
 - Legacy `/api-keys` redirects to `/settings`
 - Settings page includes API key management for the currently logged-in user
