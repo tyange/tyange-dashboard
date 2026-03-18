@@ -45,9 +45,7 @@ const GOOGLE_IDENTITY_SCRIPT_URL = 'https://accounts.google.com/gsi/client'
 let googleIdentityScriptPromise: Promise<void> | null = null
 
 export function getGoogleClientId() {
-  console.log("[v0] import.meta.env:", JSON.stringify(import.meta.env))
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim()
-  console.log("[v0] VITE_GOOGLE_CLIENT_ID value:", clientId)
   return clientId ? clientId : null
 }
 
