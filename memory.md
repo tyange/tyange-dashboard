@@ -1,10 +1,11 @@
 # Tyange Dashboard Memory
 
-Last updated: 2026-03-12 (Asia/Seoul)
+Last updated: 2026-03-18 (Asia/Seoul)
 
 ## Project Snapshot
 - Frontend: SolidJS + TypeScript + Vite
 - Styling: Tailwind CSS v4 (via `@tailwindcss/vite`)
+- UI primitives: prefer native Solid + Tailwind components; Kobalte is no longer required
 - Default UI font: Pretendard
 - Package/runtime: Bun (`bun.lock` present)
 - Deploy target: AWS Lightsail/EC2 static files + Nginx (see `README.md`)

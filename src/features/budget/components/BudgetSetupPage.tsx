@@ -1,7 +1,5 @@
-import { Popover } from '@kobalte/core/popover'
-import { TextField } from '@kobalte/core/text-field'
 import { useNavigate } from '@solidjs/router'
-import { Show, createSignal, onMount } from 'solid-js'
+import { Show, createSignal, onCleanup, onMount } from 'solid-js'
 import { createBudgetPlan, fetchBudgetSummary, updateBudget } from '../api'
 import { getApiErrorStatus, isBudgetNotConfiguredError } from '../errors'
 import { krwFormatter } from '../format'
@@ -66,9 +64,9 @@ type MoneyFieldProps = {
 
 function MoneyField(props: MoneyFieldProps) {
   return (
-    <TextField class="block">
-      <TextField.Label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">{props.label}</TextField.Label>
-      <TextField.Input
+    <label class="block">
+      <span class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">{props.label}</span>
+      <input
         type="text"
         inputmode="numeric"
         autocomplete="off"
@@ -79,9 +77,9 @@ function MoneyField(props: MoneyFieldProps) {
         placeholder={props.placeholder}
       />
       <Show when={props.description}>
-        {(description) => <TextField.Description class="mt-2 text-xs text-white/44">{description()}</TextField.Description>}
+        {(description) => <p class="mt-2 text-xs text-white/44">{description()}</p>}
       </Show>
-    </TextField>
+    </label>
   )
 }
 
@@ -92,9 +90,9 @@ type PercentFieldProps = {
 
 function PercentField(props: PercentFieldProps) {
   return (
-    <TextField class="block">
-      <TextField.Label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">알림 기준 (%)</TextField.Label>
-      <TextField.Input
+    <label class="block">
+      <span class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">알림 기준 (%)</span>
+      <input
         type="number"
         min="0"
         max="100"
@@ -105,10 +103,10 @@ function PercentField(props: PercentFieldProps) {
         class="w-full rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-white/28 focus:border-accent/55"
         placeholder="예: 85"
       />
-      <TextField.Description class="mt-2 text-xs text-white/44">
+      <p class="mt-2 text-xs text-white/44">
         사용률이 이 값을 넘기면 경고 상태로 표시됩니다.
-      </TextField.Description>
-    </TextField>
+      </p>
+    </label>
   )
 }
 
@@ -120,40 +118,72 @@ type DateFieldProps = {
 }
 
 function DateField(props: DateFieldProps) {
+  const [open, setOpen] = createSignal(false)
+  let containerRef: HTMLDivElement | undefined
   const inputClass =
     'w-full rounded-2xl border border-white/8 bg-white/4 px-4 py-3 pr-14 text-sm text-foreground outline-none transition placeholder:text-white/28 focus:border-accent/55 disabled:cursor-not-allowed disabled:opacity-70'
 
+  const closePopover = () => setOpen(false)
+
+  onMount(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!open() || !containerRef) return
+      if (event.target instanceof Node && !containerRef.contains(event.target)) {
+        closePopover()
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closePopover()
+      }
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('keydown', handleKeyDown)
+
+    onCleanup(() => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    })
+  })
+
   return (
-    <TextField class="block">
-      <TextField.Label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">{props.label}</TextField.Label>
-      <Popover placement="bottom-end">
-        <div class="relative">
-          <TextField.Input
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            value={props.value}
-            disabled={props.disabled}
-            onInput={(event) => props.onInput(dateInputOnly(event.currentTarget.value))}
-            class={inputClass}
-            placeholder="YYYY-MM-DD"
-          />
-          <Popover.Trigger
-            class="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl border border-white/12 bg-white/8 text-white/80 transition hover:bg-white/14 hover:text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
-            aria-label={`${props.label} 달력 열기`}
-            disabled={props.disabled}
-          >
-            <CalendarIcon />
-          </Popover.Trigger>
-        </div>
-        <Popover.Portal>
-          <Popover.Content class="z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-white/12 bg-slate-950/96 p-4 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
+    <div class="block">
+      <label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-white/44">{props.label}</label>
+      <div class="relative" ref={containerRef}>
+        <input
+          aria-label={props.label}
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          value={props.value}
+          disabled={props.disabled}
+          onInput={(event) => props.onInput(dateInputOnly(event.currentTarget.value))}
+          class={inputClass}
+          placeholder="YYYY-MM-DD"
+        />
+        <button
+          type="button"
+          class="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl border border-white/12 bg-white/8 text-white/80 transition hover:bg-white/14 hover:text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+          aria-label={`${props.label} 달력 열기`}
+          aria-expanded={open()}
+          disabled={props.disabled}
+          onClick={() => setOpen((current) => !current)}
+        >
+          <CalendarIcon />
+        </button>
+        <Show when={open()}>
+          <div class="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-white/12 bg-slate-950/96 p-4 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
             <div class="mb-3 flex items-center justify-between">
-              <Popover.Title class="text-sm font-semibold tracking-[0.01em] text-white">{props.label}</Popover.Title>
+              <p class="text-sm font-semibold tracking-[0.01em] text-white">{props.label}</p>
               <button
                 type="button"
                 class="rounded-lg px-2 py-1 text-xs text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-70"
-                onClick={() => props.onInput(formatDateInput(new Date()))}
+                onClick={() => {
+                  props.onInput(formatDateInput(new Date()))
+                  closePopover()
+                }}
                 disabled={props.disabled}
               >
                 오늘
@@ -163,14 +193,17 @@ function DateField(props: DateFieldProps) {
               type="date"
               value={props.value}
               disabled={props.disabled}
-              onInput={(event) => props.onInput(event.currentTarget.value)}
+              onInput={(event) => {
+                props.onInput(event.currentTarget.value)
+                closePopover()
+              }}
               class="w-full rounded-xl border border-white/12 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition focus:border-sky-500 disabled:cursor-not-allowed disabled:opacity-70"
             />
             <p class="mt-2 text-xs leading-5 text-white/58">직접 입력하거나 달력에서 날짜를 선택할 수 있습니다.</p>
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover>
-    </TextField>
+          </div>
+        </Show>
+      </div>
+    </div>
   )
 }
 
