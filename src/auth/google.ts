@@ -46,7 +46,6 @@ let googleIdentityScriptPromise: Promise<void> | null = null
 
 export function getGoogleClientId() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim()
-  console.log("[v0] VITE_GOOGLE_CLIENT_ID:", clientId ? "set" : "not set")
   return clientId ? clientId : null
 }
 
