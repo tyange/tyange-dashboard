@@ -1,4 +1,3 @@
-import { useNavigate } from '@solidjs/router'
 import { createMemo, createSignal, onMount } from 'solid-js'
 import { fetchBudgetSummary } from '../api'
 import { getApiErrorStatus, isBudgetNotConfiguredError } from '../errors'
@@ -27,14 +26,11 @@ function getSummaryErrorMessage(error: unknown) {
 }
 
 export default function BudgetDashboardPage() {
-  const navigate = useNavigate()
   const [summary, setSummary] = createSignal<BudgetSummary | null>(null)
-  const [loading, setLoading] = createSignal(true)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
   const [requiresBudgetSetup, setRequiresBudgetSetup] = createSignal(false)
 
   const refreshSummary = async () => {
-    setLoading(true)
     setErrorMessage(null)
     setRequiresBudgetSetup(false)
 
@@ -48,8 +44,6 @@ export default function BudgetDashboardPage() {
       } else {
         setErrorMessage(getSummaryErrorMessage(error))
       }
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -81,10 +75,7 @@ export default function BudgetDashboardPage() {
         <WeeklyBudgetCard
           title="현재 적용 예산"
           summary={summary() ?? emptySummary}
-          loading={loading()}
-          onRefresh={() => void refreshSummary()}
           usagePercent={usagePercent()}
-          onOpenRecordsPage={() => void navigate('/records')}
         />
       )}
     </section>

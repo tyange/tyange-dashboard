@@ -13,6 +13,7 @@ import NotificationsPage from './features/notifications/components/Notifications
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import { ThemeProvider } from './theme/ThemeProvider'
 
 function AppShell(props: ParentProps) {
   return (
@@ -34,53 +35,55 @@ function ProtectedAppShell(props: ParentProps) {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router root={AppShell}>
-        <Route path="/" component={LandingPage} />
-        <Route path="/login" component={LoginPage} />
-        <Route path="/signup" component={SignupPage} />
-        <Route
-          path="/dashboard"
-          component={() => (
-            <ProtectedAppShell>
-              <BudgetDashboardPage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/budget/setup"
-          component={() => (
-            <ProtectedAppShell>
-              <BudgetSetupPage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/records"
-          component={() => (
-            <ProtectedAppShell>
-              <SpendRecordsRoutePage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/api-keys"
-          component={() => (
-            <ProtectedAppShell>
-              <ApiKeysPage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/notifications"
-          component={() => (
-            <ProtectedAppShell>
-              <NotificationsPage />
-            </ProtectedAppShell>
-          )}
-        />
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router root={AppShell}>
+          <Route path="/" component={LandingPage} />
+          <Route path="/login" component={LoginPage} />
+          <Route path="/signup" component={SignupPage} />
+          <Route
+            path="/dashboard"
+            component={() => (
+              <ProtectedAppShell>
+                <BudgetDashboardPage />
+              </ProtectedAppShell>
+            )}
+          />
+          <Route
+            path="/budget/setup"
+            component={() => (
+              <ProtectedAppShell>
+                <BudgetSetupPage />
+              </ProtectedAppShell>
+            )}
+          />
+          <Route
+            path="/records"
+            component={() => (
+              <ProtectedAppShell>
+                <SpendRecordsRoutePage />
+              </ProtectedAppShell>
+            )}
+          />
+          <Route
+            path="/api-keys"
+            component={() => (
+              <ProtectedAppShell>
+                <ApiKeysPage />
+              </ProtectedAppShell>
+            )}
+          />
+          <Route
+            path="/notifications"
+            component={() => (
+              <ProtectedAppShell>
+                <NotificationsPage />
+              </ProtectedAppShell>
+            )}
+          />
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

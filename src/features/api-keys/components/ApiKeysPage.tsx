@@ -53,9 +53,7 @@ export default function ApiKeysPage() {
   })
 
   const handleCreate = async () => {
-    if (creating()) {
-      return
-    }
+    if (creating()) return
 
     const name = nameInput().trim()
     if (!name) {
@@ -85,9 +83,7 @@ export default function ApiKeysPage() {
   }
 
   const handleRevoke = async (apiKeyId: number) => {
-    if (revokingId() !== null) {
-      return
-    }
+    if (revokingId() !== null) return
 
     setRevokingId(apiKeyId)
     setErrorMessage(null)
@@ -108,9 +104,7 @@ export default function ApiKeysPage() {
 
   const handleCopy = async () => {
     const apiKey = issuedApiKey()
-    if (!apiKey) {
-      return
-    }
+    if (!apiKey) return
 
     try {
       await navigator.clipboard.writeText(apiKey)
@@ -120,169 +114,150 @@ export default function ApiKeysPage() {
     }
   }
 
+  const ghostButton =
+    'inline-flex h-11 items-center justify-center rounded-full border border-border/70 bg-card/82 px-4 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60'
+  const primaryButton =
+    'inline-flex h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
+
   return (
-    <section class="space-y-6">
-      <div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">API Keys</p>
-        <h1 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">유저별 API 키 발급</h1>
-        <p class="mt-3 text-sm leading-6 text-muted-foreground">
-          로그인한 사용자 기준으로 API 키를 발급합니다. 원문 키는 발급 직후 한 번만 표시되므로 바로 복사해두세요.
-        </p>
+    <section class="space-y-8 pb-10">
+      <header>
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">API Keys</p>
+          <h1 class="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">API 키 관리</h1>
+        </div>
+      </header>
 
-        <div class="mt-6 rounded-3xl border border-white/8 bg-black/20 p-4">
-          <label class="block">
-            <span class="mb-2 block text-sm font-medium text-foreground">API 키 이름</span>
-            <input
-              type="text"
-              value={nameInput()}
-              onInput={(event) => setNameInput(event.currentTarget.value)}
-              placeholder="예: macrodroid-main-phone"
-              class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-            />
-          </label>
+      <div class="border-b border-t border-border/70 py-5">
+        <div class="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Issue</p>
+            <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">새 API 키 발급</h2>
+          </div>
+          <div class="grid gap-4">
+            <label class="block">
+              <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-muted-foreground">API 키 이름</span>
+              <input
+                type="text"
+                value={nameInput()}
+                onInput={(event) => setNameInput(event.currentTarget.value)}
+                placeholder="예: macrodroid-main-phone"
+                class="w-full rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent"
+              />
+            </label>
 
-          <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs leading-5 text-muted-foreground">
-              `POST /budget/spending` 호출 시 `X-API-Key` 헤더로 사용할 수 있습니다.
-            </p>
-            <button
-              type="button"
-              onClick={() => void handleCreate()}
-              disabled={creating()}
-              class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {creating() ? '발급 중...' : 'API 키 발급'}
-            </button>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-sm leading-6 text-muted-foreground">
+                `POST /budget/spending` 호출 시 `X-API-Key` 헤더로 사용할 수 있습니다.
+              </p>
+              <button type="button" onClick={() => void handleCreate()} disabled={creating()} class={primaryButton}>
+                {creating() ? '발급 중...' : 'API 키 발급'}
+              </button>
+            </div>
           </div>
         </div>
-
-        <Show when={errorMessage()}>
-          {(message) => (
-            <div class="mt-4 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {message()}
-            </div>
-          )}
-        </Show>
-
-        <Show when={successMessage()}>
-          {(message) => (
-            <div class="mt-4 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-              {message()}
-            </div>
-          )}
-        </Show>
-
-        <Show when={issuedApiKey()}>
-          {(apiKey) => (
-            <div class="mt-4 rounded-3xl border border-sky-400/30 bg-sky-500/10 p-4">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p class="text-sm font-semibold text-sky-100">이번 한 번만 표시되는 API 키</p>
-                  <p class="mt-2 break-all rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-white">
-                    {apiKey()}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void handleCopy()}
-                  class="inline-flex shrink-0 whitespace-nowrap items-center justify-center rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-                >
-                  복사
-                </button>
-              </div>
-              <p class="mt-3 text-xs leading-5 text-sky-100/80">
-                목록 화면에서는 보안상 원문을 다시 보여주지 않습니다.
-                <Show when={copyMessage()}>
-                  {(message) => <span class="ml-2 text-white">{message()}</span>}
-                </Show>
-              </p>
-            </div>
-          )}
-        </Show>
       </div>
 
-      <div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-semibold text-foreground">발급된 키 목록</h2>
-            <p class="mt-1 text-sm text-muted-foreground">현재 로그인한 유저가 만든 키만 표시됩니다.</p>
+      <Show when={errorMessage()}>
+        {(message) => (
+          <div class="rounded-2xl border border-rose-400/30 bg-rose-500/8 px-4 py-3 text-sm text-rose-600">
+            {message()}
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setLoading(true)
-              setErrorMessage(null)
-              void loadApiKeys()
-                .catch((error) => {
-                  setErrorMessage((error as Error).message)
-                })
-                .finally(() => {
-                  setLoading(false)
-                })
-            }}
-            class="inline-flex items-center justify-center rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-          >
-            새로고침
-          </button>
+        )}
+      </Show>
+
+      <Show when={successMessage()}>
+        {(message) => (
+          <div class="rounded-2xl border border-emerald-400/30 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-600">
+            {message()}
+          </div>
+        )}
+      </Show>
+
+      <Show when={issuedApiKey()}>
+        {(apiKey) => (
+          <section class="rounded-[1.5rem] border border-sky-400/24 bg-sky-500/8 p-5">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-sky-700">이번 한 번만 표시되는 API 키</p>
+                <p class="mt-3 break-all rounded-2xl border border-border/70 bg-background/88 px-4 py-3 font-mono text-sm text-foreground">
+                  {apiKey()}
+                </p>
+                <p class="mt-3 text-xs leading-5 text-muted-foreground">
+                  목록 화면에서는 보안상 원문을 다시 보여주지 않습니다.
+                  <Show when={copyMessage()}>
+                    {(message) => <span class="ml-2 text-foreground">{message()}</span>}
+                  </Show>
+                </p>
+              </div>
+              <button type="button" onClick={() => void handleCopy()} class={ghostButton}>
+                복사
+              </button>
+            </div>
+          </section>
+        )}
+      </Show>
+
+      <section class="border-t border-border/70 pt-8">
+        <div class="mb-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Registry</p>
+          <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">발급된 키 목록</h2>
         </div>
 
-        <Show when={!loading()} fallback={<p class="mt-6 text-sm text-muted-foreground">목록을 불러오는 중...</p>}>
-          <Show
-            when={apiKeys().length > 0}
-            fallback={<p class="mt-6 text-sm text-muted-foreground">아직 발급된 API 키가 없습니다.</p>}
-          >
-            <div class="mt-6 space-y-4">
-              <For each={apiKeys()}>
-                {(record) => (
-                  <article class="rounded-3xl border border-white/8 bg-black/20 p-4">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                          <h3 class="truncate text-base font-semibold text-foreground">{record.name}</h3>
+        <Show when={!loading()} fallback={<p class="text-sm text-muted-foreground">목록을 불러오는 중...</p>}>
+          <Show when={apiKeys().length > 0} fallback={<p class="text-sm text-muted-foreground">아직 발급된 API 키가 없습니다.</p>}>
+            <div class="overflow-x-auto rounded-[1.25rem] border border-border/70">
+              <table class="min-w-full border-collapse text-left text-sm">
+                <thead class="bg-secondary/65 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  <tr>
+                    <th class="px-4 py-3 font-medium">이름</th>
+                    <th class="px-4 py-3 font-medium">상태</th>
+                    <th class="px-4 py-3 font-medium">생성일</th>
+                    <th class="px-4 py-3 font-medium">마지막 사용</th>
+                    <th class="px-4 py-3 font-medium">폐기일</th>
+                    <th class="px-4 py-3 font-medium">관리</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-card/65">
+                  <For each={apiKeys()}>
+                    {(record) => (
+                      <tr class="border-t border-border/60">
+                        <td class="px-4 py-3 align-middle text-base font-medium text-foreground">{record.name}</td>
+                        <td class="px-4 py-3 align-middle">
                           <span
                             class={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] ${
                               isRevoked(record)
-                                ? 'bg-rose-500/15 text-rose-200'
-                                : 'bg-emerald-500/15 text-emerald-200'
+                                ? 'bg-rose-500/14 text-rose-700'
+                                : 'bg-emerald-500/14 text-emerald-700'
                             }`}
                           >
                             {isRevoked(record) ? 'REVOKED' : 'ACTIVE'}
                           </span>
-                        </div>
-                        <dl class="mt-3 grid gap-2 text-sm text-muted-foreground">
-                          <div>
-                            <dt class="font-medium text-foreground">생성일</dt>
-                            <dd>{formatDateTime(record.created_at)}</dd>
-                          </div>
-                          <div>
-                            <dt class="font-medium text-foreground">마지막 사용</dt>
-                            <dd>{formatDateTime(record.last_used_at)}</dd>
-                          </div>
-                          <div>
-                            <dt class="font-medium text-foreground">폐기일</dt>
-                            <dd>{formatDateTime(record.revoked_at)}</dd>
-                          </div>
-                        </dl>
-                      </div>
-
-                      <Show when={!isRevoked(record)}>
-                        <button
-                          type="button"
-                          onClick={() => void handleRevoke(record.id)}
-                          disabled={revokingId() === record.id}
-                          class="inline-flex items-center justify-center rounded-full border border-rose-400/30 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {revokingId() === record.id ? '폐기 중...' : '폐기'}
-                        </button>
-                      </Show>
-                    </div>
-                  </article>
-                )}
-              </For>
+                        </td>
+                        <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(record.created_at)}</td>
+                        <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(record.last_used_at)}</td>
+                        <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(record.revoked_at)}</td>
+                        <td class="px-4 py-3 align-middle">
+                          <Show when={!isRevoked(record)} fallback={<span class="text-muted-foreground">-</span>}>
+                            <button
+                              type="button"
+                              onClick={() => void handleRevoke(record.id)}
+                              disabled={revokingId() === record.id}
+                              class="inline-flex h-10 items-center justify-center rounded-full border border-rose-400/30 px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-500/8 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {revokingId() === record.id ? '폐기 중...' : '폐기'}
+                            </button>
+                          </Show>
+                        </td>
+                      </tr>
+                    )}
+                  </For>
+                </tbody>
+              </table>
             </div>
           </Show>
         </Show>
-      </div>
+      </section>
     </section>
   )
 }

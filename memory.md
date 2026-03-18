@@ -41,6 +41,8 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - Budget setup route UI: `src/features/budget/components/BudgetSetupPage.tsx`
 
 ## Behavior Conventions In Use
+- Global theme uses semantic Tailwind tokens backed by CSS variables in `src/index.css`
+- Theme switching uses `html[data-theme="light" | "dark"]` with persisted preference key `ui-theme`; `system` is the default mode
 - Keep API fetch logic in `src/features/budget/api.ts`
 - Public landing page lives at `/` and only introduces the app plus login guidance
 - Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
@@ -71,7 +73,8 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - 예산/소비 관련 404는 기본적으로 "활성 기간 예산 없음" 또는 "기록 없음" 메시지로 처리하고 예산 설정 유도 화면을 노출한다
 - 엑셀 계산 플로우는 업로드/계산, 버킷 검토, 활성 기간 예산 저장의 3단계를 명확히 분리한다
 - 401은 세션 만료 메시지, 404는 활성 예산/기록 없음 메시지, 400 엑셀 계산 오류는 파일/입력값 오류 메시지로 매핑한다
-- 예산 기능 UI는 반복 카드보다 `hero panel + metric tiles + compact control panel` 패턴을 우선 사용하고, 다크 배경 위 초록/적색 상태 포인트를 예산 도메인 한정으로 적극 사용한다
+- 보호 페이지 UI는 무거운 반복 카드보다 화면 목적에 맞는 정보 밀도를 우선하고, 관리 화면은 `문서형 헤더 + 인라인 통계 + 평평한 섹션 + 테이블/행` 패턴을 사용한다
+- 보호 페이지의 페이지/섹션 헤더는 기본적으로 제목만 남기고 소개성 설명 문장은 두지 않는다
 - 사용자 노출 문구에서는 `활성`보다 `현재` 또는 `적용` 표현을 우선 사용한다
 
 ## Data Contracts (Budget)

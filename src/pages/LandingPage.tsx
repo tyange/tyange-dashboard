@@ -1,6 +1,7 @@
 import { A } from '@solidjs/router'
 import { Show } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
+import ThemeToggle from '../components/ThemeToggle'
 
 export default function LandingPage() {
   const auth = useAuth()
@@ -8,6 +9,9 @@ export default function LandingPage() {
   return (
     <main class="relative overflow-hidden">
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(61,150,255,0.24),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(54,211,153,0.18),transparent_24%)]" />
+      <div class="absolute right-4 top-4 z-10 md:right-8 md:top-8">
+        <ThemeToggle />
+      </div>
       <section class="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-20 md:px-8">
         <div class="mx-auto w-full max-w-lg">
           <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Tyange Dashboard</p>

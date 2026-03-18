@@ -9,7 +9,7 @@ export default function BudgetSetupRequiredState(props: BudgetSetupRequiredState
   return (
     <section
       aria-label="예산 등록 필요 안내"
-      class="overflow-hidden rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-7 shadow-[0_18px_44px_rgba(2,6,23,0.28)]"
+      class="overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card)_96%,white),color-mix(in_oklab,var(--card)_88%,var(--background)))] p-7 shadow-[0_18px_44px_color-mix(in_srgb,var(--shadow-color)_16%,transparent)]"
     >
       <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Budget Setup</p>
       <h2 class="mt-4 text-2xl font-semibold tracking-tight text-foreground">{props.title ?? '현재 예산을 먼저 등록해주세요.'}</h2>
@@ -25,7 +25,7 @@ export default function BudgetSetupRequiredState(props: BudgetSetupRequiredState
           </A>
           <A
             href="/"
-            class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/4 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-white/8"
+            class="inline-flex items-center justify-center rounded-full border border-border/70 bg-card/82 px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary"
           >
             메인으로
           </A>
