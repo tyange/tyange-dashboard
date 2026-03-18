@@ -2,6 +2,10 @@ import { For, Show, createSignal, onMount } from 'solid-js'
 import { createApiKey, fetchApiKeys, revokeApiKey } from '../api'
 import type { ApiKeyRecord } from '../types'
 
+type ApiKeysPageProps = {
+  embedded?: boolean
+}
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return '없음'
@@ -26,7 +30,7 @@ function isRevoked(record: ApiKeyRecord) {
   return Boolean(record.revoked_at)
 }
 
-export default function ApiKeysPage() {
+export default function ApiKeysPage(props: ApiKeysPageProps) {
   const [apiKeys, setApiKeys] = createSignal<ApiKeyRecord[]>([])
   const [nameInput, setNameInput] = createSignal('')
   const [loading, setLoading] = createSignal(true)
@@ -120,41 +124,46 @@ export default function ApiKeysPage() {
     'inline-flex h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
 
   return (
-    <section class="space-y-8 pb-10">
-      <header>
-        <div>
-          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">API Keys</p>
-          <h1 class="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">API 키 관리</h1>
-        </div>
-      </header>
-
-      <div class="border-b border-t border-border/70 py-5">
-        <div class="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Issue</p>
-            <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">새 API 키 발급</h2>
-          </div>
-          <div class="grid gap-4">
-            <label class="block">
-              <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-muted-foreground">API 키 이름</span>
-              <input
-                type="text"
-                value={nameInput()}
-                onInput={(event) => setNameInput(event.currentTarget.value)}
-                placeholder="예: macrodroid-main-phone"
-                class="w-full rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent"
-              />
-            </label>
-
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p class="text-sm leading-6 text-muted-foreground">
-                `POST /budget/spending` 호출 시 `X-API-Key` 헤더로 사용할 수 있습니다.
-              </p>
-              <button type="button" onClick={() => void handleCreate()} disabled={creating()} class={primaryButton}>
-                {creating() ? '발급 중...' : 'API 키 발급'}
-              </button>
+    <section class={props.embedded ? 'space-y-8' : 'space-y-8 pb-10'}>
+      <Show
+        when={props.embedded}
+        fallback={
+          <header>
+            <div>
+              <h1 class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">API 키</h1>
             </div>
+          </header>
+        }
+      >
+        <header class="border-t border-border/70 pt-8">
+          <div>
+            <h2 class="text-2xl font-semibold tracking-tight text-foreground">API 키</h2>
           </div>
+        </header>
+      </Show>
+
+      <div class={props.embedded ? 'border-b border-border/70 pb-5' : 'border-b border-t border-border/70 py-5'}>
+        <div class="grid gap-4">
+          <label class="block">
+            <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-muted-foreground">이름</span>
+            <input
+              type="text"
+              value={nameInput()}
+              onInput={(event) => setNameInput(event.currentTarget.value)}
+              placeholder="예: macrodroid-main-phone"
+              class="w-full rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent"
+            />
+          </label>
+
+          <div class="flex justify-start">
+            <button type="button" onClick={() => void handleCreate()} disabled={creating()} class={primaryButton}>
+              {creating() ? '발급 중...' : 'API 키 발급'}
+            </button>
+          </div>
+
+          <p class="text-sm leading-6 text-muted-foreground">
+            `POST /budget/spending` 호출 시 `X-API-Key` 헤더로 사용할 수 있습니다.
+          </p>
         </div>
       </div>
 
@@ -198,10 +207,9 @@ export default function ApiKeysPage() {
         )}
       </Show>
 
-      <section class="border-t border-border/70 pt-8">
+      <section class="pt-2">
         <div class="mb-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Registry</p>
-          <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">발급된 키 목록</h2>
+          <h3 class="text-2xl font-semibold tracking-tight text-foreground">발급된 키</h3>
         </div>
 
         <Show when={!loading()} fallback={<p class="text-sm text-muted-foreground">목록을 불러오는 중...</p>}>
@@ -231,7 +239,7 @@ export default function ApiKeysPage() {
                                 : 'bg-emerald-500/14 text-emerald-700'
                             }`}
                           >
-                            {isRevoked(record) ? 'REVOKED' : 'ACTIVE'}
+                            {isRevoked(record) ? '중지됨' : '사용 중'}
                           </span>
                         </td>
                         <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(record.created_at)}</td>

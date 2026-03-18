@@ -14,10 +14,13 @@ export default function LandingPage() {
       </div>
       <section class="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-20 md:px-8">
         <div class="mx-auto w-full max-w-lg">
-          <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Tyange Dashboard</p>
+          <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Tyange</p>
           <h1 class="mt-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            아무거나 확인하세요. 그냥, 다.
+            읽을 거리와 알림을 한곳에서 가볍게 확인하세요.
           </h1>
+          <p class="mt-4 text-sm leading-6 text-muted-foreground">
+            구독한 소스를 모아 보고, 필요한 브라우저 알림만 켜둘 수 있는 개인용 허브입니다.
+          </p>
 
           <div class="mt-8 flex justify-end">
             <Show
@@ -43,7 +46,7 @@ export default function LandingPage() {
                 href="/dashboard"
                 class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
                 >
-                  대시보드로 이동
+                  새 글 보기
               </A>
             </Show>
           </div>

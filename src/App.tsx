@@ -1,17 +1,17 @@
-import { Route, Router } from '@solidjs/router'
+import { Navigate, Route, Router } from '@solidjs/router'
 import type { ParentProps } from 'solid-js'
 import PWABadge from './PWABadge'
 import { AuthProvider } from './auth/AuthProvider'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AuthenticatedLayout from './components/AuthenticatedLayout'
 import AppFooter from './components/AppFooter'
-import ApiKeysPage from './features/api-keys/components/ApiKeysPage'
-import BudgetDashboardPage from './features/budget/components/BudgetDashboardPage'
 import BudgetSetupPage from './features/budget/components/BudgetSetupPage'
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
+import FeedHomePage from './features/notifications/components/FeedHomePage'
 import NotificationsPage from './features/notifications/components/NotificationsPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import SettingsPage from './pages/SettingsPage'
 import SignupPage from './pages/SignupPage'
 import { ThemeProvider } from './theme/ThemeProvider'
 
@@ -45,7 +45,23 @@ function App() {
             path="/dashboard"
             component={() => (
               <ProtectedAppShell>
-                <BudgetDashboardPage />
+                <FeedHomePage />
+              </ProtectedAppShell>
+            )}
+          />
+          <Route
+            path="/subscriptions"
+            component={() => (
+              <ProtectedAppShell>
+                <NotificationsPage />
+              </ProtectedAppShell>
+            )}
+          />
+          <Route
+            path="/settings"
+            component={() => (
+              <ProtectedAppShell>
+                <SettingsPage />
               </ProtectedAppShell>
             )}
           />
@@ -67,19 +83,15 @@ function App() {
           />
           <Route
             path="/api-keys"
-            component={() => (
-              <ProtectedAppShell>
-                <ApiKeysPage />
-              </ProtectedAppShell>
-            )}
+            component={() => <Navigate href="/settings" />}
           />
           <Route
             path="/notifications"
-            component={() => (
-              <ProtectedAppShell>
-                <NotificationsPage />
-              </ProtectedAppShell>
-            )}
+            component={() => <Navigate href="/subscriptions" />}
+          />
+          <Route
+            path="/feed"
+            component={() => <Navigate href="/dashboard" />}
           />
         </Router>
       </AuthProvider>

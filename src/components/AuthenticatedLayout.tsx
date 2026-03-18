@@ -12,11 +12,9 @@ export default function AuthenticatedLayout(props: ParentProps) {
   const [menuOpen, setMenuOpen] = createSignal(false)
 
   const navItems = [
-    { href: '/dashboard', label: '예산' },
-    { href: '/records', label: '소비 기록' },
-    { href: '/budget/setup', label: '예산 설정' },
-    { href: '/api-keys', label: 'API 키' },
-    { href: '/notifications', label: '알림' },
+    { href: '/dashboard', label: '새 글' },
+    { href: '/subscriptions', label: '구독' },
+    { href: '/settings', label: '설정' },
   ] as const
 
   onMount(() => {
@@ -48,7 +46,7 @@ export default function AuthenticatedLayout(props: ParentProps) {
   }
 
   const navLinkClass = (path: string) =>
-    `inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
+    `inline-flex w-auto items-center justify-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200 ${
       location.pathname === path
         ? 'bg-foreground text-background shadow-[0_10px_24px_color-mix(in_srgb,var(--shadow-color)_16%,transparent)]'
         : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'
@@ -105,9 +103,9 @@ export default function AuthenticatedLayout(props: ParentProps) {
           <Show when={menuOpen()}>
             <div
               id="mobile-auth-nav"
-              class="absolute left-0 right-0 top-[calc(100%+0.5rem)] rounded-[1.5rem] border border-border/80 bg-background/98 px-3 pb-3 pt-3 shadow-[0_22px_50px_color-mix(in_srgb,var(--shadow-color)_26%,transparent)] backdrop-blur-2xl lg:hidden"
+              class="absolute left-0 top-[calc(100%+0.5rem)] w-[calc(100vw-2rem)] max-w-lg rounded-[1.5rem] border border-border/80 bg-background/98 px-3 pb-3 pt-3 shadow-[0_22px_50px_color-mix(in_srgb,var(--shadow-color)_26%,transparent)] backdrop-blur-2xl lg:hidden"
             >
-              <div class="grid gap-2 sm:grid-cols-2">
+              <div class="flex flex-col items-start gap-2">
                 <For each={navItems}>
                   {(item) => (
                     <A href={item.href} class={navLinkClass(item.href)} onClick={handleNavigate}>

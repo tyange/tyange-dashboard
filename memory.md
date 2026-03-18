@@ -48,9 +48,12 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
 - Login page keeps the existing `user_id` + `password` flow and additionally supports Google Identity Services button login via CMS API `POST /login/google`
 - Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
-- Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
-- Protected API key management page lives at `/api-keys` and manages only the currently logged-in user's keys
-- Protected notifications page lives at `/notifications` and manages the current user's RSS subscriptions plus current-browser web push registration
+- Protected pages live at `/dashboard`, `/subscriptions`, `/settings`, and `/records`; unauthenticated access redirects to `/login?next=...`
+- Protected default home at `/dashboard` is the notifications feed home; primary navigation is `새 글`, `구독`, `설정`
+- Legacy `/notifications` redirects to `/subscriptions`
+- Legacy `/api-keys` redirects to `/settings`
+- Settings page includes API key management for the currently logged-in user
+- Subscriptions page manages the current user's RSS subscriptions and current-browser web push registration
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
 - Email/password login and Google login both converge on the same stored JWT session shape in `localStorage`
 - Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, spending records, budget setup, API key management, and notifications entries
@@ -88,6 +91,11 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - Preserve Korean UI labels/messages unless explicitly requested to change
 - When adding API calls, keep consistent error pattern: `API ${status}: ${bodyText || fallbackMessage}`
 - Vitest unit runs exclude `tests/e2e/**`; browser E2E coverage stays on Playwright via `bun run test:e2e`
+- When iterating on UX with the user, prefer small visual/layout adjustments in short cycles over large one-shot redesigns
+- Treat user screenshots and DOM observations as high-signal feedback; fix the concrete awkward area first before expanding scope
+- For new hub/feed concepts without backend support yet, it is acceptable to ship clearly labeled mock UI temporarily, but avoid fake navigation or speculative features that add no immediate value
+- Prefer concise, service-like UI copy over explanatory marketing copy; avoid redundant section titles, duplicate settings surfaces, and unnecessary navigation actions
+- On mobile navigation, avoid full-width menu pills when the information density is low; prefer compact stacked items or similarly restrained layouts
 
 ## Outstanding TODOs
 - Revisit refresh-token handling when access token expiry UX becomes relevant
