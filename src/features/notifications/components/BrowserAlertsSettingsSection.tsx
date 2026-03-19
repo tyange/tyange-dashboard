@@ -248,7 +248,7 @@ export default function BrowserAlertsSettingsSection(props: BrowserAlertsSetting
   const statCell = 'rounded-2xl border border-border/70 bg-background/78 px-4 py-4'
 
   return (
-    <section class="border-t border-border/70 pt-8">
+    <section class="pt-8">
       <div class="flex items-end justify-between gap-4">
         <h2 class="text-2xl font-semibold tracking-tight text-foreground">
           {props.title ?? '현재 브라우저 알림'}
@@ -329,7 +329,7 @@ export default function BrowserAlertsSettingsSection(props: BrowserAlertsSetting
               <summary class="cursor-pointer px-4 py-3 text-sm font-medium text-foreground">
                 고급 정보 보기
               </summary>
-              <div class="border-t border-border/70 px-4 py-4">
+              <div class="px-4 py-4">
                 <Show when={browserPushStatus().localPayload}>
                   {(payload) => (
                     <div class="rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-muted-foreground">

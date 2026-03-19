@@ -13,7 +13,7 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
   const warning = () => !overspent() && props.summary.alert === true
   const usageTone = () => (overspent() ? 'bg-red-500' : warning() ? 'bg-amber-500' : 'bg-accent')
   const usageLabel = () => (overspent() ? '초과 상태' : warning() ? '경고 상태' : '정상 범위')
-  const section = 'border-t border-border/70 pt-8'
+  const section = 'pt-8'
   const statCell = 'rounded-2xl border border-border/70 bg-background/78 px-4 py-4'
   return (
     <article id="active-budget" class="space-y-8">
@@ -24,7 +24,7 @@ export default function WeeklyBudgetCard(props: WeeklyBudgetCardProps) {
         </div>
       </header>
 
-      <section class="border-b border-t border-border/70 py-5">
+      <section class="border-b border-border/70 py-5">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p class="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">적용 기간</p>

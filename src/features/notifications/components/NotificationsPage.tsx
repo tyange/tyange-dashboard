@@ -99,7 +99,7 @@ export default function NotificationsPage() {
         <h1 class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">구독</h1>
       </header>
 
-      <section class="border-t border-border/70 pt-8">
+      <section class="pt-8">
         <div class="mb-5 flex items-end justify-between gap-4">
           <h2 class="text-2xl font-semibold tracking-tight text-foreground">목록</h2>
         </div>
@@ -188,7 +188,7 @@ export default function NotificationsPage() {
         </Show>
       </section>
 
-      <section class="border-t border-border/70 pt-8">
+      <section class="pt-8">
         <div class="mb-5">
           <h2 class="text-2xl font-semibold tracking-tight text-foreground">RSS 추가</h2>
         </div>

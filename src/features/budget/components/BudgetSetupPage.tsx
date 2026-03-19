@@ -313,7 +313,7 @@ export default function BudgetSetupPage() {
 
   const primaryButton =
     'inline-flex h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
-  const section = 'border-t border-border/70 pt-8'
+  const section = 'pt-8'
   const statCell = 'rounded-2xl border border-border/70 bg-background/78 px-4 py-4'
 
   return (
@@ -343,7 +343,7 @@ export default function BudgetSetupPage() {
 
       <Show when={activeBudget()}>
         {(summary) => (
-          <section class="border-b border-t border-border/70 py-5">
+          <section class="border-b border-border/70 py-5">
             <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p class="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">현재 적용 기간</p>

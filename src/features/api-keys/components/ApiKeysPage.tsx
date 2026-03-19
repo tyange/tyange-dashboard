@@ -135,14 +135,14 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
           </header>
         }
       >
-        <header class="border-t border-border/70 pt-8">
+        <header class="pt-8">
           <div>
             <h2 class="text-2xl font-semibold tracking-tight text-foreground">API 키</h2>
           </div>
         </header>
       </Show>
 
-      <div class={props.embedded ? 'border-b border-border/70 pb-5' : 'border-b border-t border-border/70 py-5'}>
+      <div class={props.embedded ? 'border-b border-border/70 pb-5' : 'border-b border-border/70 py-5'}>
         <div class="grid gap-4">
           <label class="block">
             <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-muted-foreground">이름</span>

@@ -96,7 +96,7 @@ function statusLabel(status: SpendingImportRowStatus) {
 }
 
 export default function SpendRecordsPage(props: SpendRecordsPageProps) {
-  const section = 'border-t border-border/70 pt-8'
+  const section = 'pt-8'
   const statCell = 'rounded-2xl border border-border/70 bg-background/78 px-4 py-4'
   const panel = 'rounded-[1.5rem] border border-border/70 bg-card/78 p-5 shadow-[0_14px_36px_color-mix(in_srgb,var(--shadow-color)_10%,transparent)]'
   const inputClass =
@@ -122,7 +122,7 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
       </header>
 
       <Show when={hasSummary()}>
-        <section class="border-b border-t border-border/70 py-5">
+        <section class="border-b border-border/70 py-5">
           <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p class="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">적용 기간</p>
