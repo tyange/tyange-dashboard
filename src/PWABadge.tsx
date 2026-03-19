@@ -39,11 +39,11 @@ const PWABadge: Component = () => {
       <Show when={needRefresh()}>
         <div class={styles.Toast}>
           <div class={styles.Message}>
-            <span id="toast-message">New content available, click on reload button to update.</span>
+            <span id="toast-message">새 버전이 있어요. 새로고침하면 업데이트돼요.</span>
           </div>
           <div>
-            <button class={styles.ToastButton} onClick={() => updateServiceWorker()}>Reload</button>
-            <button class={styles.ToastButton} onClick={() => close()}>Close</button>
+            <button class={styles.ToastButton} onClick={() => updateServiceWorker()}>새로고침</button>
+            <button class={styles.ToastButton} onClick={() => close()}>닫기</button>
           </div>
         </div>
       </Show>

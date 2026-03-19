@@ -6,6 +6,7 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import AuthenticatedLayout from './components/AuthenticatedLayout'
 import AppFooter from './components/AppFooter'
 import BudgetSetupPage from './features/budget/components/BudgetSetupPage'
+import MatchPage from './features/match/components/MatchPage'
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
 import FeedHomePage from './features/notifications/components/FeedHomePage'
 import NotificationsPage from './features/notifications/components/NotificationsPage'
@@ -35,6 +36,7 @@ function ProtectedAppShell(props: ParentProps) {
 
 function App() {
   return (
+<<<<<<< Updated upstream
     <ThemeProvider>
       <AuthProvider>
         <Router root={AppShell}>
@@ -96,6 +98,63 @@ function App() {
         </Router>
       </AuthProvider>
     </ThemeProvider>
+=======
+    <AuthProvider>
+      <Router root={AppShell}>
+        <Route path="/" component={LandingPage} />
+        <Route path="/login" component={LoginPage} />
+        <Route path="/signup" component={SignupPage} />
+        <Route
+          path="/dashboard"
+          component={() => (
+            <ProtectedAppShell>
+              <BudgetDashboardPage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/budget/setup"
+          component={() => (
+            <ProtectedAppShell>
+              <BudgetSetupPage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/records"
+          component={() => (
+            <ProtectedAppShell>
+              <SpendRecordsRoutePage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/api-keys"
+          component={() => (
+            <ProtectedAppShell>
+              <ApiKeysPage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/notifications"
+          component={() => (
+            <ProtectedAppShell>
+              <NotificationsPage />
+            </ProtectedAppShell>
+          )}
+        />
+        <Route
+          path="/match"
+          component={() => (
+            <ProtectedAppShell>
+              <MatchPage />
+            </ProtectedAppShell>
+          )}
+        />
+      </Router>
+    </AuthProvider>
+>>>>>>> Stashed changes
   )
 }
 

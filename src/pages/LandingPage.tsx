@@ -16,7 +16,11 @@ export default function LandingPage() {
         <div class="mx-auto w-full max-w-lg">
           <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Tyange</p>
           <h1 class="mt-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+<<<<<<< Updated upstream
             읽을 거리와 알림을 한곳에서 가볍게 확인하세요.
+=======
+            내 예산과 소비, 한눈에 관리하세요.
+>>>>>>> Stashed changes
           </h1>
           <p class="mt-4 text-sm leading-6 text-muted-foreground">
             구독한 소스를 모아 보고, 필요한 브라우저 알림만 켜둘 수 있는 개인용 허브입니다.

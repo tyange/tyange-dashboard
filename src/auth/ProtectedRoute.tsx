@@ -15,7 +15,7 @@ export default function ProtectedRoute(props: ParentProps) {
       <Match when={auth.status() === 'unknown'}>
         <main class="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center p-6">
           <div class="rounded-2xl border border-border bg-card px-6 py-5 text-sm text-muted-foreground shadow-[0_18px_44px_rgba(2,6,23,0.28)]">
-            인증 상태를 확인하는 중...
+            잠시만요…
           </div>
         </main>
       </Match>

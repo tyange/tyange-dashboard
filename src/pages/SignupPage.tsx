@@ -24,15 +24,15 @@ export default function SignupPage() {
 
   const validateForm = () => {
     if (!email().trim()) {
-      return '이메일을 입력해주세요.'
+      return '이메일을 입력해 주세요.'
     }
 
     if (password().length < MIN_PASSWORD_LENGTH) {
-      return `비밀번호는 최소 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`
+      return `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상으로 입력해 주세요.`
     }
 
     if (password() !== passwordConfirm()) {
-      return '비밀번호 확인이 일치하지 않습니다.'
+      return '비밀번호가 서로 달라요.'
     }
 
     return null
@@ -58,11 +58,11 @@ export default function SignupPage() {
 
     try {
       const signupResult = await signupRequest(normalizedEmail, password())
-      setSuccessMessage(signupResult.message ?? '회원가입이 완료되었습니다.')
+      setSuccessMessage(signupResult.message ?? '가입이 완료됐어요!')
       await auth.login(normalizedEmail, password())
       void navigate(nextPath(), { replace: true })
     } catch (error) {
-      const message = error instanceof Error ? error.message : '회원가입 실패'
+      const message = error instanceof Error ? error.message : '가입에 실패했어요.'
       setErrorMessage(message)
     } finally {
       setIsSubmitting(false)
@@ -140,7 +140,7 @@ export default function SignupPage() {
                   disabled={isSubmitting()}
                   class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
                 >
-                  {isSubmitting() ? '가입 중...' : '회원가입'}
+                  {isSubmitting() ? '가입 중…' : '회원가입'}
                 </button>
               </div>
             </form>

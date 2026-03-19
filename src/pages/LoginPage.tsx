@@ -45,7 +45,7 @@ export default function LoginPage() {
       await auth.login(userId().trim(), password())
       finishLogin()
     } catch (error) {
-      handleLoginError(error, '로그인 실패')
+      handleLoginError(error, '아이디 또는 비밀번호가 맞지 않아요.')
     } finally {
       setIsSubmitting(false)
     }
@@ -53,12 +53,12 @@ export default function LoginPage() {
 
   onMount(() => {
     if (!googleClientId) {
-      setGoogleStatusMessage('Google 로그인을 사용하려면 클라이언트 설정이 필요해요.')
+      setGoogleStatusMessage('Google 로그인이 아직 준비되지 않았어요.')
       return
     }
 
     if (!googleButtonContainer) {
-      setGoogleStatusMessage('Google 로그인 버튼을 준비하지 못했어요. 새로고침 후 다시 시도해주세요.')
+      setGoogleStatusMessage('Google 로그인 버튼을 불러오지 못했어요. 새로고침해 주세요.')
       return
     }
 
@@ -83,7 +83,7 @@ export default function LoginPage() {
             }
 
             if (!response.credential?.trim()) {
-              setErrorMessage('Google 로그인 정보를 확인하지 못했어요. 다시 시도해주세요.')
+              setErrorMessage('Google 로그인 정보를 확인하지 못했어요. 다시 시도해 주세요.')
               return
             }
 
@@ -94,7 +94,7 @@ export default function LoginPage() {
               await auth.loginWithGoogle(response.credential)
               finishLogin()
             } catch (error) {
-              handleLoginError(error, 'Google 로그인에 실패했어요. 잠시 후 다시 시도해주세요.')
+              handleLoginError(error, 'Google 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.')
             } finally {
               setIsGoogleSubmitting(false)
             }
@@ -108,7 +108,7 @@ export default function LoginPage() {
           return
         }
 
-        const message = error instanceof Error ? error.message : 'Google 로그인 준비에 실패했어요. 잠시 후 다시 시도해주세요.'
+        const message = error instanceof Error ? error.message : 'Google 로그인 준비에 실패했어요. 잠시 후 다시 시도해 주세요.'
         setGoogleStatusMessage(message)
       })
       .finally(() => {
@@ -192,12 +192,12 @@ export default function LoginPage() {
                     <div ref={googleButtonContainer} class="flex min-h-[52px] w-full items-center justify-center" />
                     <Show when={isGoogleLoading()}>
                       <div class="absolute inset-0 flex items-center justify-center px-4 text-sm text-muted-foreground">
-                        Google 로그인 준비 중...
+                        Google 로그인 준비 중…
                       </div>
                     </Show>
                     <Show when={isGoogleSubmitting()}>
                       <div class="absolute inset-0 flex items-center justify-center px-4 text-sm font-medium text-foreground">
-                        Google 계정을 확인하는 중...
+                        Google 계정 확인 중…
                       </div>
                     </Show>
                   </div>
@@ -224,7 +224,7 @@ export default function LoginPage() {
                   disabled={isAnySubmitting()}
                   class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
                 >
-                  {isSubmitting() ? '로그인 중...' : '로그인하기'}
+                  {isSubmitting() ? '로그인 중…' : '로그인하기'}
                 </button>
               </div>
             </form>

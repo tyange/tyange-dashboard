@@ -19,7 +19,7 @@ const emptySummary: BudgetSummary = {
 
 function getSummaryErrorMessage(error: unknown) {
   if (getApiErrorStatus(error) === 401) {
-    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+    return '로그인이 만료됐어요. 다시 로그인해 주세요.'
   }
 
   return (error as Error).message
@@ -60,8 +60,8 @@ export default function BudgetDashboardPage() {
     <section aria-label="Dashboard">
       {requiresBudgetSetup() && (
         <BudgetSetupRequiredState
-          title="현재 예산을 먼저 등록해주세요."
-          description="현재 적용 예산이 없습니다. 예산 설정 화면에서 기간 총예산을 생성하거나 엑셀 계산 결과를 검토한 뒤 직접 저장해주세요."
+          title="예산을 먼저 등록해 주세요"
+          description="등록된 예산이 없어요. 예산 설정에서 새 예산을 만들어 보세요."
         />
       )}
 

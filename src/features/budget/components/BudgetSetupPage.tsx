@@ -29,11 +29,11 @@ function getSaveErrorMessage(error: unknown) {
   const status = getApiErrorStatus(error)
 
   if (status === 401) {
-    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+    return '로그인이 만료됐어요. 다시 로그인해 주세요.'
   }
 
   if (status === 404) {
-    return '현재 예산이 없거나 수정할 예산을 찾지 못했습니다.'
+    return '예산이 없거나 수정할 예산을 찾을 수 없어요.'
   }
 
   return (error as Error).message
@@ -104,8 +104,15 @@ function PercentField(props: PercentFieldProps) {
         class="w-full rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-accent/55"
         placeholder="예: 85"
       />
+<<<<<<< Updated upstream
       <p class="mt-2 text-xs leading-5 text-muted-foreground">사용률이 이 값을 넘기면 경고 상태로 표시됩니다.</p>
     </label>
+=======
+      <TextField.Description class="mt-2 text-xs text-white/44">
+        이 비율을 넘기면 경고가 표시돼요.
+      </TextField.Description>
+    </TextField>
+>>>>>>> Stashed changes
   )
 }
 
@@ -198,11 +205,19 @@ function DateField(props: DateFieldProps) {
               }}
               class="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
             />
+<<<<<<< Updated upstream
             <p class="mt-2 text-xs leading-5 text-muted-foreground">직접 입력하거나 달력에서 날짜를 선택할 수 있습니다.</p>
           </div>
         </Show>
       </div>
     </div>
+=======
+            <p class="mt-2 text-xs leading-5 text-white/58">직접 입력하거나 달력에서 선택하세요.</p>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover>
+    </TextField>
+>>>>>>> Stashed changes
   )
 }
 
@@ -247,25 +262,25 @@ export default function BudgetSetupPage() {
     const toDate = saveToDateInput().trim()
 
     if (!Number.isFinite(totalBudget) || totalBudget <= 0) {
-      setErrorMessage('총예산은 0보다 큰 숫자로 입력해주세요.')
+      setErrorMessage('총예산을 1원 이상 입력해 주세요.')
       setSuccessMessage(null)
       return
     }
 
     if (!Number.isFinite(alertThresholdPercent) || alertThresholdPercent < 0 || alertThresholdPercent > 100) {
-      setErrorMessage('알림 기준은 0에서 100 사이의 숫자로 입력해주세요.')
+      setErrorMessage('알림 기준은 0~100% 사이로 입력해 주세요.')
       setSuccessMessage(null)
       return
     }
 
     if (!hasActiveBudget() && (!fromDate || !toDate)) {
-      setErrorMessage('시작일과 종료일을 모두 입력해주세요.')
+      setErrorMessage('시작일과 종료일을 모두 입력해 주세요.')
       setSuccessMessage(null)
       return
     }
 
     if (!hasActiveBudget() && fromDate > toDate) {
-      setErrorMessage('시작일은 종료일보다 늦을 수 없습니다.')
+      setErrorMessage('시작일이 종료일보다 늦어요.')
       setSuccessMessage(null)
       return
     }
@@ -292,7 +307,7 @@ export default function BudgetSetupPage() {
           setAlertThresholdInput(String(toThresholdPercent(updatedBudget.alert_threshold)))
         }
 
-        setSuccessMessage(result.message ?? '현재 적용 예산을 수정했습니다.')
+        setSuccessMessage(result.message ?? '예산을 수정했어요.')
       } else {
         const result = await createBudgetPlan({
           total_budget: totalBudget,
@@ -301,7 +316,7 @@ export default function BudgetSetupPage() {
           alert_threshold: alertThreshold,
         })
 
-        setSuccessMessage(result.message ?? '예산을 생성했습니다.')
+        setSuccessMessage(result.message ?? '예산을 만들었어요.')
         void navigate('/dashboard', { replace: true })
       }
     } catch (error) {
@@ -322,6 +337,18 @@ export default function BudgetSetupPage() {
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Budget Setup</p>
           <h1 class="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">예산 설정</h1>
+<<<<<<< Updated upstream
+=======
+          <p class="mt-3 text-base text-muted-foreground">예산 금액과 알림 기준을 설정하세요.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class={secondaryButton} onClick={() => void navigate('/dashboard')}>
+            대시보드로
+          </button>
+          <button type="button" class={secondaryButton} onClick={() => void navigate('/records')}>
+            소비 기록 보기
+          </button>
+>>>>>>> Stashed changes
         </div>
       </header>
 
@@ -370,12 +397,24 @@ export default function BudgetSetupPage() {
         )}
       </Show>
 
+<<<<<<< Updated upstream
       <section class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section class={section}>
           <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Budget Form</p>
           <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">
             {hasActiveBudget() ? '현재 예산 수정' : '새 예산 생성'}
           </h2>
+=======
+      <section class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section class={accentPanel}>
+          <div>
+            <p class="text-lg font-medium text-white/48">예산 저장</p>
+            <h2 class="mt-3 text-3xl font-semibold tracking-tight text-foreground">
+              {hasActiveBudget() ? '현재 예산 수정' : '새 예산 생성'}
+            </h2>
+            <p class="mt-3 text-sm text-white/52">총지출은 소비 기록을 기반으로 자동 계산돼요.</p>
+          </div>
+>>>>>>> Stashed changes
 
           <div class="mt-6 grid gap-4 md:grid-cols-2">
             <MoneyField
@@ -383,7 +422,7 @@ export default function BudgetSetupPage() {
               value={saveTotalBudgetInput()}
               onInput={setSaveTotalBudgetInput}
               placeholder="예: 450000"
-              description="총지출은 거래 원장에서 자동 계산됩니다."
+              description="소비 기록 기반으로 자동 계산돼요."
             />
             <PercentField value={alertThresholdInput()} onInput={setAlertThresholdInput} />
             <DateField
@@ -401,11 +440,19 @@ export default function BudgetSetupPage() {
           </div>
 
           <div class="mt-6 flex flex-wrap items-center gap-3">
+<<<<<<< Updated upstream
             <button type="button" class={primaryButton} disabled={saving()} onClick={() => void submitBudget()}>
               {saving() ? '저장 중...' : hasActiveBudget() ? '현재 예산 수정' : '예산 생성'}
             </button>
             <span class="text-sm text-muted-foreground">
               {hasActiveBudget() ? '적용 기간은 고정되며 총예산과 알림 기준만 수정합니다.' : '처음 생성할 때만 시작일과 종료일을 입력합니다.'}
+=======
+            <button type="button" class={buttonClass} disabled={saving()} onClick={() => void submitBudget()}>
+              {saving() ? '저장 중…' : hasActiveBudget() ? '예산 수정' : '예산 만들기'}
+            </button>
+            <span class="text-sm text-white/46">
+              {hasActiveBudget() ? '기간은 변경할 수 없고, 금액과 알림 기준만 수정돼요.' : '처음 만들 때만 기간을 설정할 수 있어요.'}
+>>>>>>> Stashed changes
             </span>
           </div>
         </section>

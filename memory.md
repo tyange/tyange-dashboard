@@ -1,6 +1,10 @@
 # Tyange Dashboard Memory
 
+<<<<<<< Updated upstream
 Last updated: 2026-03-18 (Asia/Seoul)
+=======
+Last updated: 2026-03-19 (Asia/Seoul)
+>>>>>>> Stashed changes
 
 ## Project Snapshot
 - Frontend: SolidJS + TypeScript + Vite
@@ -33,6 +37,7 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - Authenticated layout: `src/components/AuthenticatedLayout.tsx`
 - API key management UI: `src/features/api-keys/*`
 - Notifications/RSS management UI: `src/features/notifications/*`
+- Match UI: `src/features/match/*`
 - Budget domain: `src/features/budget/*`
 - Main API layer: `src/features/budget/api.ts`
 - Custom PWA service worker: `src/sw.ts`
@@ -48,6 +53,7 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
 - Login page keeps the existing `user_id` + `password` flow and additionally supports Google Identity Services button login via CMS API `POST /login/google`
 - Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
+<<<<<<< Updated upstream
 - Protected pages live at `/dashboard`, `/subscriptions`, `/settings`, and `/records`; unauthenticated access redirects to `/login?next=...`
 - Protected default home at `/dashboard` is the notifications feed home; primary navigation is `새 글`, `구독`, `설정`
 - Feed home at `/dashboard` uses authenticated `GET /feed/items` and shows aggregated RSS items plus unread summary
@@ -55,11 +61,19 @@ Last updated: 2026-03-18 (Asia/Seoul)
 - Legacy `/api-keys` redirects to `/settings`
 - Settings page includes API key management for the currently logged-in user
 - Subscriptions page manages the current user's RSS subscriptions and current-browser web push registration
+=======
+- Protected pages live at `/dashboard` and `/records`; unauthenticated access redirects to `/login?next=...`
+- Protected API key management page lives at `/api-keys` and manages only the currently logged-in user's keys
+- Protected notifications page lives at `/notifications` and manages the current user's RSS subscriptions plus current-browser web push registration
+- Protected 1:1 match page lives at `/match` and manages direct match request, response, disconnect, and matched-user message timeline flows
+>>>>>>> Stashed changes
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
 - Email/password login and Google login both converge on the same stored JWT session shape in `localStorage`
 - Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow) and exposes budget, spending records, budget setup, API key management, and notifications entries
+- Top floating authenticated navigation bar also exposes the 1:1 match entry at `/match`
 - API errors are surfaced in UI as a top error alert block
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
+- 1:1 매칭 페이지는 `GET /match/me`, `POST /match/request`, `POST /match/:match_id/respond`, `DELETE /match/me`, `GET/POST /match/messages`를 사용하며, `pending`이면 신청/응답 상태를, `matched`이면 메시지 타임라인을 렌더링한다
 - 알림 관리 페이지는 초기 진입 시 `/push/public-key`, `/push/subscriptions`, `/rss-sources`를 함께 조회하고, 브라우저 로컬 `PushSubscription`과 서버 저장 구독을 정합해 현재 브라우저 상태를 표시한다
 - `/push/public-key`의 503은 서버 미설정 정상 분기이며, 알림 페이지는 이를 `unavailable` 상태로 처리해 푸시 등록 CTA를 비활성화하고 안내 문구를 보여준다
 - 웹 푸시는 Vite PWA `injectManifest` 기반 커스텀 서비스 워커(`src/sw.ts`)에서 `push`와 `notificationclick`을 처리하며, 페이지 컴포넌트에는 서비스 워커 로직을 넣지 않는다

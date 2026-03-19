@@ -28,15 +28,15 @@ function getPreviewErrorMessage(error: unknown) {
   const message = (error as Error).message
 
   if (status === 401) {
-    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+    return '로그인이 만료됐어요. 다시 로그인해 주세요.'
   }
 
   if (status === 404) {
-    return '현재 예산이 없어 가져오기를 진행할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
+    return '예산이 없어 가져오기를 할 수 없어요. 예산을 먼저 등록해 주세요.'
   }
 
   if (status === 400) {
-    return `잘못된 파일이거나 미리보기를 생성할 수 없습니다. ${message.slice('API 400: '.length).trim()}`
+    return `파일을 읽을 수 없어요. ${message.slice('API 400: '.length).trim()}`
   }
 
   return message
@@ -47,19 +47,19 @@ function getCommitErrorMessage(error: unknown) {
   const message = (error as Error).message
 
   if (status === 401) {
-    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+    return '로그인이 만료됐어요. 다시 로그인해 주세요.'
   }
 
   if (status === 404) {
-    return '현재 예산이 없어 가져오기를 반영할 수 없습니다. 예산 기간을 먼저 등록해주세요.'
+    return '예산이 없어 반영할 수 없어요. 예산을 먼저 등록해 주세요.'
   }
 
   if (status === 409) {
-    return `선택한 거래와 서버 상태가 일치하지 않습니다. 미리보기를 다시 불러온 뒤 재시도해주세요. ${message.slice('API 409: '.length).trim()}`
+    return `데이터가 변경됐어요. 미리보기를 다시 불러온 뒤 재시도해 주세요. ${message.slice('API 409: '.length).trim()}`
   }
 
   if (status === 400) {
-    return `업로드 요청을 처리하지 못했습니다. ${message.slice('API 400: '.length).trim()}`
+    return `업로드에 실패했어요. ${message.slice('API 400: '.length).trim()}`
   }
 
   return message
@@ -69,11 +69,11 @@ function getMutationErrorMessage(error: unknown) {
   const status = getApiErrorStatus(error)
 
   if (status === 401) {
-    return '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.'
+    return '로그인이 만료됐어요. 다시 로그인해 주세요.'
   }
 
   if (status === 404) {
-    return '현재 예산이 없거나 수정할 소비 기록을 찾지 못했습니다.'
+    return '예산이 없거나 해당 기록을 찾을 수 없어요.'
   }
 
   return (error as Error).message
@@ -176,13 +176,13 @@ export default function SpendRecordsRoutePage() {
     const merchant = merchantRaw === '' ? null : merchantRaw
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      setErrorMessage('금액은 0보다 큰 숫자로 입력해주세요.')
+      setErrorMessage('금액을 1원 이상 입력해 주세요.')
       setSuccessMessage(null)
       return
     }
 
     if (!transactedAt) {
-      setErrorMessage('사용 일시를 입력해주세요.')
+      setErrorMessage('사용 일시를 입력해 주세요.')
       setSuccessMessage(null)
       return
     }
@@ -190,7 +190,7 @@ export default function SpendRecordsRoutePage() {
     const apiDateTime = toApiDateTime(transactedAt)
     const parsedDate = new Date(apiDateTime)
     if (Number.isNaN(parsedDate.getTime())) {
-      setErrorMessage('사용 일시 형식이 올바르지 않습니다.')
+      setErrorMessage('사용 일시 형식이 올바르지 않아요.')
       setSuccessMessage(null)
       return
     }
@@ -213,10 +213,10 @@ export default function SpendRecordsRoutePage() {
               }
             : prev,
         )
-        setSuccessMessage('소비 기록을 저장했습니다.')
+        setSuccessMessage('저장했어요.')
       } else {
         await updateSpendRecord(recordId, amount, merchant, apiDateTime)
-        setSuccessMessage('소비 기록을 수정했습니다.')
+        setSuccessMessage('수정했어요.')
       }
 
       resetForm()
@@ -249,7 +249,7 @@ export default function SpendRecordsRoutePage() {
       if (editingRecordId() === recordId) {
         resetForm()
       }
-      setSuccessMessage('소비 기록을 삭제했습니다.')
+      setSuccessMessage('삭제했어요.')
       await loadRecords({ preserveImportFeedback: true })
     } catch (error) {
       setErrorMessage(getMutationErrorMessage(error))
@@ -266,7 +266,7 @@ export default function SpendRecordsRoutePage() {
 
     if (totalRecordCount === 0) return
 
-    const confirmed = window.confirm(`현재 소비 기록 ${totalRecordCount}건을 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)
+    const confirmed = window.confirm(`${totalRecordCount}건을 모두 삭제할까요? 되돌릴 수 없어요.`)
     if (!confirmed) return
 
     setDeletingAll(true)
@@ -276,7 +276,7 @@ export default function SpendRecordsRoutePage() {
     try {
       await deleteAllSpendRecords()
       resetForm()
-      setSuccessMessage('소비 기록을 전체 삭제했습니다.')
+      setSuccessMessage('전체 삭제했어요.')
       await loadRecords({ preserveImportFeedback: true })
     } catch (error) {
       setErrorMessage(getMutationErrorMessage(error))
@@ -294,7 +294,7 @@ export default function SpendRecordsRoutePage() {
     const file = importFile()
 
     if (!file) {
-      setImportMessage('가져올 신한카드 XLS 파일을 먼저 선택해주세요.')
+      setImportMessage('XLS 파일을 먼저 선택해 주세요.')
       setImportResult(null)
       return
     }
@@ -313,7 +313,7 @@ export default function SpendRecordsRoutePage() {
 
       setImportPreview(preview)
       setSelectedFingerprints(defaults)
-      setImportMessage(`미리보기를 불러왔습니다. 신규 ${preview.summary.new_count}건이 기본 선택되었습니다.`)
+      setImportMessage(`미리보기 완료! 신규 ${preview.summary.new_count}건이 선택됐어요.`)
     } catch (error) {
       setImportMessage(getPreviewErrorMessage(error))
     } finally {
@@ -350,12 +350,12 @@ export default function SpendRecordsRoutePage() {
     const fingerprints = selectedFingerprints()
 
     if (!file || !preview) {
-      setImportMessage('먼저 미리보기를 생성해주세요.')
+      setImportMessage('먼저 미리보기를 해주세요.')
       return
     }
 
     if (fingerprints.length === 0) {
-      setImportMessage('반영할 신규 거래를 하나 이상 선택해주세요.')
+      setImportMessage('반영할 거래를 하나 이상 선택해 주세요.')
       return
     }
 
@@ -368,9 +368,7 @@ export default function SpendRecordsRoutePage() {
       setImportResult(result)
       setImportPreview(null)
       setSelectedFingerprints([])
-      setImportMessage(
-        `가져오기를 반영했습니다. ${result.inserted_count}건이 추가되었고 예산 요약과 소비 기록을 다시 불러왔습니다.`,
-      )
+      setImportMessage(`${result.inserted_count}건을 추가했어요.`)
       await loadRecords({ preserveImportFeedback: true })
     } catch (error) {
       setImportMessage(getCommitErrorMessage(error))
@@ -382,8 +380,8 @@ export default function SpendRecordsRoutePage() {
   if (requiresBudgetSetup()) {
     return (
       <BudgetSetupRequiredState
-        title="소비 기록을 보기 전에 예산을 등록해주세요."
-        description="현재 적용 예산이 아직 없어 소비 기록 범위를 계산할 수 없습니다. 기간 총예산을 먼저 생성한 뒤 다시 시도해주세요."
+        title="소비 기록을 보려면 예산을 먼저 등록해 주세요"
+        description="등록된 예산이 없어 소비 기록을 표시할 수 없어요. 예산을 먼저 만들어 주세요."
       />
     )
   }

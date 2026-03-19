@@ -12,9 +12,9 @@ export default function BudgetSetupRequiredState(props: BudgetSetupRequiredState
       class="overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card)_96%,white),color-mix(in_oklab,var(--card)_88%,var(--background)))] p-7 shadow-[0_18px_44px_color-mix(in_srgb,var(--shadow-color)_16%,transparent)]"
     >
       <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Budget Setup</p>
-      <h2 class="mt-4 text-2xl font-semibold tracking-tight text-foreground">{props.title ?? '현재 예산을 먼저 등록해주세요.'}</h2>
+      <h2 class="mt-4 text-2xl font-semibold tracking-tight text-foreground">{props.title ?? '예산을 먼저 등록해 주세요'}</h2>
       <p class="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-        {props.description ?? '현재 적용 예산이 없습니다. 설정 페이지에서 기간 총예산을 생성하거나 계산 결과를 검토한 뒤 직접 저장해주세요.'}
+        {props.description ?? '등록된 예산이 없어요. 예산 설정에서 새 예산을 만들어 주세요.'}
       </p>
       <div class="mt-7 flex flex-wrap items-center gap-3">
           <A
