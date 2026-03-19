@@ -24,6 +24,7 @@ export default function AuthenticatedLayout(props: ParentProps) {
         setMenuOpen(false)
       }
     }
+
     window.addEventListener('scroll', handleScroll)
     window.addEventListener('resize', handleResize)
     handleScroll()
@@ -64,7 +65,6 @@ export default function AuthenticatedLayout(props: ParentProps) {
             aria-label="Authenticated navigation"
             class="flex items-center justify-between gap-3 px-3 py-3"
           >
-<<<<<<< Updated upstream
             <div class="min-w-0 flex-1">
               <div class="hidden min-w-0 items-center gap-1 lg:flex">
                 <For each={navItems}>
@@ -98,27 +98,6 @@ export default function AuthenticatedLayout(props: ParentProps) {
                   로그아웃
                 </button>
               </Show>
-=======
-            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-              <A href="/dashboard" class={navLinkClass('/dashboard')}>
-                예산
-              </A>
-              <A href="/records" class={navLinkClass('/records')}>
-                소비 기록
-              </A>
-              <A href="/budget/setup" class={navLinkClass('/budget/setup')}>
-                예산 설정
-              </A>
-              <A href="/api-keys" class={navLinkClass('/api-keys')}>
-                API 키
-              </A>
-              <A href="/notifications" class={navLinkClass('/notifications')}>
-                알림
-              </A>
-              <A href="/match" class={navLinkClass('/match')}>
-                1:1
-              </A>
->>>>>>> Stashed changes
             </div>
           </nav>
 

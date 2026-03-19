@@ -114,28 +114,14 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
 
   return (
     <article aria-label="소비 기록 페이지" class="space-y-8 pb-10">
-      <header>
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Spend Records</p>
           <h1 class="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">소비 기록</h1>
-<<<<<<< Updated upstream
-=======
-          <p class="mt-3 text-base text-muted-foreground">주간별 소비 내역을 확인하세요.</p>
         </div>
-        <div class="flex flex-wrap gap-3">
-          <button type="button" class={ghostButton} onClick={props.onBack}>
-            대시보드로
-          </button>
-          <button
-            type="button"
-            class={dangerButton}
-            onClick={props.onDeleteAll}
-            disabled={props.loading || props.saving || props.deletingRecordId !== null || props.deletingAll || totalRecordCount() === 0}
-          >
-            {props.deletingAll ? '삭제 중…' : '전체 삭제'}
-          </button>
->>>>>>> Stashed changes
-        </div>
+        <button type="button" class={ghostButton} onClick={props.onBack}>
+          대시보드로
+        </button>
       </header>
 
       <Show when={hasSummary()}>
@@ -165,52 +151,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                 <p class={`mt-2 text-2xl font-semibold ${props.remainingBudget < 0 ? 'text-red-500' : 'text-foreground'}`}>
                   {krwFormatter.format(props.remainingBudget)}
                 </p>
-<<<<<<< Updated upstream
-=======
-                <p class="mt-2 text-sm text-white/52">간단히 입력하고 바로 저장하세요.</p>
-              </div>
-              <div class="grid gap-3 sm:grid-cols-3">
-                <label class="block">
-                  <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-white/40">금액</span>
-                  <input
-                    type="text"
-                    inputmode="numeric"
-                    value={props.amountInput}
-                    onInput={(event) => props.onAmountInput(digitsOnly(event.currentTarget.value))}
-                    class={inputClass}
-                    placeholder="12000"
-                  />
-                </label>
-                <label class="block">
-                  <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-white/40">가맹점</span>
-                  <input
-                    type="text"
-                    value={props.merchantInput}
-                    onInput={(event) => props.onMerchantInput(event.currentTarget.value)}
-                    class={inputClass}
-                    placeholder="스타벅스"
-                  />
-                </label>
-                <label class="block">
-                  <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-white/40">사용 일시</span>
-                  <input
-                    type="datetime-local"
-                    value={props.transactedAtInput}
-                    onInput={(event) => props.onTransactedAtInput(event.currentTarget.value)}
-                    class={inputClass}
-                  />
-                </label>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <Show when={props.editingRecordId !== null}>
-                  <button type="button" class={ghostButton} onClick={props.onCancelEditing} disabled={props.saving}>
-                    취소
-                  </button>
-                </Show>
-                <button type="button" class={primaryButton} onClick={props.onSubmit} disabled={props.saving}>
-                  {props.saving ? '저장 중…' : props.editingRecordId ? '수정 저장' : '저장'}
-                </button>
->>>>>>> Stashed changes
               </div>
             </div>
           </div>
@@ -236,7 +176,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
       <section class={section}>
         <div class="grid gap-8 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <div>
-<<<<<<< Updated upstream
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Quick Input</p>
             <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">
               {props.editingRecordId ? '거래 수정' : '거래 추가'}
@@ -294,10 +233,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Import</p>
             <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">신한카드 XLS 가져오기</h2>
-=======
-            <p class="text-lg font-medium text-white/48">신한카드 XLS 가져오기</p>
-            <p class="mt-2 text-sm text-white/52">XLS 파일을 선택하고 미리보기로 확인한 뒤 반영하세요.</p>
->>>>>>> Stashed changes
           </div>
           <div class="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-center">
             <input
@@ -362,7 +297,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                     </article>
                   </div>
 
-<<<<<<< Updated upstream
                   <div class={panel}>
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div>
@@ -400,43 +334,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                           {props.commitLoading ? '반영 중...' : '선택 항목 반영'}
                         </button>
                       </div>
-=======
-                  <div class="flex flex-col gap-4 rounded-[1.5rem] border border-white/8 bg-white/3 p-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <p class="text-xs uppercase tracking-[0.16em] text-white/40">Detected</p>
-                      <p class="mt-2 text-sm text-foreground">
-                        감지 소스 {preview().detected_source} · 전체 {preview().summary.parsed_count}건
-                      </p>
-                      <p class="mt-1 text-sm text-white/52">
-                        반영 선택 {props.selectedFingerprints.length} / 선택 가능 {props.selectableFingerprintCount}
-                      </p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        class={ghostButton}
-                        onClick={props.onSelectAllFingerprints}
-                        disabled={props.commitLoading || props.previewLoading || props.selectableFingerprintCount === 0}
-                      >
-                        전체 선택
-                      </button>
-                      <button
-                        type="button"
-                        class={ghostButton}
-                        onClick={props.onClearSelectedFingerprints}
-                        disabled={props.commitLoading || props.previewLoading || props.selectedFingerprints.length === 0}
-                      >
-                        선택 해제
-                      </button>
-                      <button
-                        type="button"
-                        class={primaryButton}
-                        onClick={props.onCommitImport}
-                        disabled={props.commitLoading || props.previewLoading || props.selectedFingerprints.length === 0}
-                      >
-                        {props.commitLoading ? '반영 중…' : '선택 항목 반영'}
-                      </button>
->>>>>>> Stashed changes
                     </div>
                   </div>
 
@@ -513,13 +410,8 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                       <p class="mt-2 text-2xl font-semibold text-foreground">{krwFormatter.format(result().inserted_net_amount_sum)}</p>
                     </article>
                   </div>
-<<<<<<< Updated upstream
                   <p class="mt-4 text-sm leading-6 text-foreground">
                     반영 후 적용 기간 소비 합계는 {krwFormatter.format(result().period_total_spent_from_records)}이고 남은 예산은 {krwFormatter.format(result().remaining)}입니다.
-=======
-                  <p class="mt-4 text-sm leading-6 text-emerald-100/82">
-                    전체 기간 소비 합계 {krwFormatter.format(result().period_total_spent_from_records)} · 남은 예산 {krwFormatter.format(result().remaining)}
->>>>>>> Stashed changes
                   </p>
                 </div>
               )}
@@ -531,13 +423,8 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
       <section class={section}>
         <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-<<<<<<< Updated upstream
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Ledger</p>
             <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">거래 목록</h2>
-=======
-            <p class="text-lg font-medium text-white/48">거래 목록</p>
-            <p class="mt-2 text-sm text-white/52">주간 구분은 보기 편하게 나눈 것이고, 예산은 전체 기간 합산으로 계산돼요.</p>
->>>>>>> Stashed changes
           </div>
           <button
             type="button"
@@ -549,15 +436,9 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
           </button>
         </div>
 
-<<<<<<< Updated upstream
         <Show when={!props.loading} fallback={<p class="text-sm text-muted-foreground">소비 기록을 불러오는 중...</p>}>
           <Show when={props.weekGroups.length > 0} fallback={<p class="text-sm text-muted-foreground">소비 기록이 없습니다.</p>}>
             <div class="space-y-8">
-=======
-        <Show when={!props.loading} fallback={<p class="text-sm text-white/48">불러오는 중…</p>}>
-          <Show when={props.weekGroups.length > 0} fallback={<p class="text-sm text-white/48">아직 소비 기록이 없어요.</p>}>
-            <div class="space-y-6">
->>>>>>> Stashed changes
               <For each={props.weekGroups}>
                 {(group) => (
                   <section class="space-y-3">
@@ -569,7 +450,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                       <p class="text-xl font-semibold tracking-tight text-foreground">{krwFormatter.format(group.weekly_total)}</p>
                     </header>
 
-<<<<<<< Updated upstream
                     <div class="overflow-x-auto rounded-[1.25rem] border border-border/70">
                       <table class="min-w-full border-collapse text-left text-sm">
                         <thead class="bg-secondary/65 text-xs uppercase tracking-[0.14em] text-muted-foreground">
@@ -610,35 +490,6 @@ export default function SpendRecordsPage(props: SpendRecordsPageProps) {
                         </tbody>
                       </table>
                     </div>
-=======
-                    <ul class="overflow-hidden rounded-[1.5rem] border border-white/8">
-                      <For each={group.records}>
-                        {(record) => (
-                          <li class="flex flex-col gap-4 border-t border-white/6 bg-white/2 px-4 py-4 first:border-t-0 md:flex-row md:items-center md:justify-between">
-                            <div class="min-w-0">
-                              <p class="truncate text-base font-medium text-foreground">{record.merchant || '기타 지출'}</p>
-                              <p class="mt-1 text-sm text-white/46">{formatRecordDate(record.transacted_at)}</p>
-                            </div>
-
-                            <div class="flex flex-wrap items-center gap-3 md:justify-end">
-                              <span class="text-lg font-semibold text-foreground">{krwFormatter.format(record.amount)}</span>
-                              <button type="button" class={ghostButton} onClick={() => props.onStartEditing(record)} disabled={props.saving}>
-                                수정
-                              </button>
-                              <button
-                                type="button"
-                                class={dangerButton}
-                                onClick={() => props.onDelete(record.record_id)}
-                                disabled={props.deletingRecordId !== null || props.deletingAll}
-                              >
-                                {props.deletingRecordId === record.record_id ? '삭제 중…' : '삭제'}
-                              </button>
-                            </div>
-                          </li>
-                        )}
-                      </For>
-                    </ul>
->>>>>>> Stashed changes
                   </section>
                 )}
               </For>

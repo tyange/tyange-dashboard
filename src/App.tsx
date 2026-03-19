@@ -6,8 +6,8 @@ import ProtectedRoute from './auth/ProtectedRoute'
 import AuthenticatedLayout from './components/AuthenticatedLayout'
 import AppFooter from './components/AppFooter'
 import BudgetSetupPage from './features/budget/components/BudgetSetupPage'
-import MatchPage from './features/match/components/MatchPage'
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
+import MatchPage from './features/match/components/MatchPage'
 import FeedHomePage from './features/notifications/components/FeedHomePage'
 import NotificationsPage from './features/notifications/components/NotificationsPage'
 import LandingPage from './pages/LandingPage'
@@ -36,7 +36,6 @@ function ProtectedAppShell(props: ParentProps) {
 
 function App() {
   return (
-<<<<<<< Updated upstream
     <ThemeProvider>
       <AuthProvider>
         <Router root={AppShell}>
@@ -84,77 +83,19 @@ function App() {
             )}
           />
           <Route
-            path="/api-keys"
-            component={() => <Navigate href="/settings" />}
+            path="/match"
+            component={() => (
+              <ProtectedAppShell>
+                <MatchPage />
+              </ProtectedAppShell>
+            )}
           />
-          <Route
-            path="/notifications"
-            component={() => <Navigate href="/subscriptions" />}
-          />
-          <Route
-            path="/feed"
-            component={() => <Navigate href="/dashboard" />}
-          />
+          <Route path="/api-keys" component={() => <Navigate href="/settings" />} />
+          <Route path="/notifications" component={() => <Navigate href="/subscriptions" />} />
+          <Route path="/feed" component={() => <Navigate href="/dashboard" />} />
         </Router>
       </AuthProvider>
     </ThemeProvider>
-=======
-    <AuthProvider>
-      <Router root={AppShell}>
-        <Route path="/" component={LandingPage} />
-        <Route path="/login" component={LoginPage} />
-        <Route path="/signup" component={SignupPage} />
-        <Route
-          path="/dashboard"
-          component={() => (
-            <ProtectedAppShell>
-              <BudgetDashboardPage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/budget/setup"
-          component={() => (
-            <ProtectedAppShell>
-              <BudgetSetupPage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/records"
-          component={() => (
-            <ProtectedAppShell>
-              <SpendRecordsRoutePage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/api-keys"
-          component={() => (
-            <ProtectedAppShell>
-              <ApiKeysPage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/notifications"
-          component={() => (
-            <ProtectedAppShell>
-              <NotificationsPage />
-            </ProtectedAppShell>
-          )}
-        />
-        <Route
-          path="/match"
-          component={() => (
-            <ProtectedAppShell>
-              <MatchPage />
-            </ProtectedAppShell>
-          )}
-        />
-      </Router>
-    </AuthProvider>
->>>>>>> Stashed changes
   )
 }
 

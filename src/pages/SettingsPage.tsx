@@ -1,5 +1,4 @@
 import ApiKeysPage from '../features/api-keys/components/ApiKeysPage'
-import BrowserAlertsSettingsSection from '../features/notifications/components/BrowserAlertsSettingsSection'
 
 export default function SettingsPage() {
   return (
@@ -8,7 +7,6 @@ export default function SettingsPage() {
         <h1 class="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">설정</h1>
       </header>
 
-      <BrowserAlertsSettingsSection title="알림" showTechnicalDetails />
       <ApiKeysPage embedded />
     </section>
   )

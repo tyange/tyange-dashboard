@@ -118,21 +118,10 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
     }
   }
 
-<<<<<<< Updated upstream
   const ghostButton =
     'inline-flex h-11 items-center justify-center rounded-full border border-border/70 bg-card/82 px-4 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60'
   const primaryButton =
     'inline-flex h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
-=======
-  return (
-    <section class="space-y-6">
-      <div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">API Keys</p>
-        <h1 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">API 키 발급</h1>
-        <p class="mt-3 text-sm leading-6 text-muted-foreground">
-          API 키는 발급 직후 한 번만 표시돼요. 바로 복사해 두세요.
-        </p>
->>>>>>> Stashed changes
 
   return (
     <section class={props.embedded ? 'space-y-8' : 'space-y-8 pb-10'}>
@@ -166,23 +155,9 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
             />
           </label>
 
-<<<<<<< Updated upstream
           <div class="flex justify-start">
             <button type="button" onClick={() => void handleCreate()} disabled={creating()} class={primaryButton}>
               {creating() ? '발급 중...' : 'API 키 발급'}
-=======
-          <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs leading-5 text-muted-foreground">
-              소비 기록 API 호출 시 X-API-Key 헤더에 넣어 사용하세요.
-            </p>
-            <button
-              type="button"
-              onClick={() => void handleCreate()}
-              disabled={creating()}
-              class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {creating() ? '발급 중…' : 'API 키 발급'}
->>>>>>> Stashed changes
             </button>
           </div>
 
@@ -190,66 +165,12 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
             `POST /budget/spending` 호출 시 `X-API-Key` 헤더로 사용할 수 있습니다.
           </p>
         </div>
-<<<<<<< Updated upstream
       </div>
 
       <Show when={errorMessage()}>
         {(message) => (
           <div class="rounded-2xl border border-rose-400/30 bg-rose-500/8 px-4 py-3 text-sm text-rose-600">
             {message()}
-=======
-
-        <Show when={errorMessage()}>
-          {(message) => (
-            <div class="mt-4 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {message()}
-            </div>
-          )}
-        </Show>
-
-        <Show when={successMessage()}>
-          {(message) => (
-            <div class="mt-4 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-              {message()}
-            </div>
-          )}
-        </Show>
-
-        <Show when={issuedApiKey()}>
-          {(apiKey) => (
-            <div class="mt-4 rounded-3xl border border-sky-400/30 bg-sky-500/10 p-4">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p class="text-sm font-semibold text-sky-100">지금만 볼 수 있는 API 키</p>
-                  <p class="mt-2 break-all rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-white">
-                    {apiKey()}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void handleCopy()}
-                  class="inline-flex shrink-0 whitespace-nowrap items-center justify-center rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-                >
-                  복사
-                </button>
-              </div>
-              <p class="mt-3 text-xs leading-5 text-sky-100/80">
-                보안을 위해 이 키는 다시 볼 수 없어요.
-                <Show when={copyMessage()}>
-                  {(message) => <span class="ml-2 text-white">{message()}</span>}
-                </Show>
-              </p>
-            </div>
-          )}
-        </Show>
-      </div>
-
-      <div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-semibold text-foreground">발급된 키 목록</h2>
-            <p class="mt-1 text-sm text-muted-foreground">내가 만든 키만 표시돼요.</p>
->>>>>>> Stashed changes
           </div>
         )}
       </Show>
@@ -291,7 +212,6 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
           <h3 class="text-2xl font-semibold tracking-tight text-foreground">발급된 키</h3>
         </div>
 
-<<<<<<< Updated upstream
         <Show when={!loading()} fallback={<p class="text-sm text-muted-foreground">목록을 불러오는 중...</p>}>
           <Show when={apiKeys().length > 0} fallback={<p class="text-sm text-muted-foreground">아직 발급된 API 키가 없습니다.</p>}>
             <div class="overflow-x-auto rounded-[1.25rem] border border-border/70">
@@ -312,21 +232,6 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
                       <tr class="border-t border-border/60">
                         <td class="px-4 py-3 align-middle text-base font-medium text-foreground">{record.name}</td>
                         <td class="px-4 py-3 align-middle">
-=======
-        <Show when={!loading()} fallback={<p class="mt-6 text-sm text-muted-foreground">불러오는 중…</p>}>
-          <Show
-            when={apiKeys().length > 0}
-            fallback={<p class="mt-6 text-sm text-muted-foreground">아직 발급한 키가 없어요.</p>}
-          >
-            <div class="mt-6 space-y-4">
-              <For each={apiKeys()}>
-                {(record) => (
-                  <article class="rounded-3xl border border-white/8 bg-black/20 p-4">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                          <h3 class="truncate text-base font-semibold text-foreground">{record.name}</h3>
->>>>>>> Stashed changes
                           <span
                             class={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] ${
                               isRevoked(record)
@@ -336,7 +241,6 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
                           >
                             {isRevoked(record) ? '중지됨' : '사용 중'}
                           </span>
-<<<<<<< Updated upstream
                         </td>
                         <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(record.created_at)}</td>
                         <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(record.last_used_at)}</td>
@@ -358,39 +262,6 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
                   </For>
                 </tbody>
               </table>
-=======
-                        </div>
-                        <dl class="mt-3 grid gap-2 text-sm text-muted-foreground">
-                          <div>
-                            <dt class="font-medium text-foreground">생성일</dt>
-                            <dd>{formatDateTime(record.created_at)}</dd>
-                          </div>
-                          <div>
-                            <dt class="font-medium text-foreground">마지막 사용</dt>
-                            <dd>{formatDateTime(record.last_used_at)}</dd>
-                          </div>
-                          <div>
-                            <dt class="font-medium text-foreground">폐기일</dt>
-                            <dd>{formatDateTime(record.revoked_at)}</dd>
-                          </div>
-                        </dl>
-                      </div>
-
-                      <Show when={!isRevoked(record)}>
-                        <button
-                          type="button"
-                          onClick={() => void handleRevoke(record.id)}
-                          disabled={revokingId() === record.id}
-                          class="inline-flex items-center justify-center rounded-full border border-rose-400/30 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {revokingId() === record.id ? '폐기 중…' : '폐기'}
-                        </button>
-                      </Show>
-                    </div>
-                  </article>
-                )}
-              </For>
->>>>>>> Stashed changes
             </div>
           </Show>
         </Show>
