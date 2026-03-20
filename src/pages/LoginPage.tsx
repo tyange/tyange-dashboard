@@ -8,15 +8,12 @@ export default function LoginPage() {
   const auth = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams<{ next?: string }>()
-  const [userId, setUserId] = createSignal('')
-  const [password, setPassword] = createSignal('')
-  const [isSubmitting, setIsSubmitting] = createSignal(false)
   const [isGoogleLoading, setIsGoogleLoading] = createSignal(false)
   const [isGoogleSubmitting, setIsGoogleSubmitting] = createSignal(false)
   const [googleStatusMessage, setGoogleStatusMessage] = createSignal<string | null>(null)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
   const googleClientId = getGoogleClientId()
-  const isAnySubmitting = () => isSubmitting() || isGoogleSubmitting()
+  const isAnySubmitting = () => isGoogleSubmitting()
   let googleButtonContainer: HTMLDivElement | undefined
 
   const nextPath = () => {
@@ -31,24 +28,6 @@ export default function LoginPage() {
   const handleLoginError = (error: unknown, fallbackMessage: string) => {
     const message = error instanceof Error ? error.message : fallbackMessage
     setErrorMessage(message)
-  }
-
-  const completePasswordLogin = async () => {
-    if (isAnySubmitting()) {
-      return
-    }
-
-    setIsSubmitting(true)
-    setErrorMessage(null)
-
-    try {
-      await auth.login(userId().trim(), password())
-      finishLogin()
-    } catch (error) {
-      handleLoginError(error, '아이디 또는 비밀번호가 맞지 않아요.')
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   onMount(() => {
@@ -133,36 +112,8 @@ export default function LoginPage() {
         <section class="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-20 md:px-8">
           <div class="mx-auto w-full max-w-lg">
             <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Login</p>
-
-            <form
-              class="mt-8 space-y-4"
-              onSubmit={async (event) => {
-                event.preventDefault()
-                await completePasswordLogin()
-              }}
-            >
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-foreground">아이디</span>
-                <input
-                  type="text"
-                  value={userId()}
-                  onInput={(event) => setUserId(event.currentTarget.value)}
-                  placeholder="user_id"
-                  disabled={isAnySubmitting()}
-                  class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-                />
-              </label>
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-foreground">비밀번호</span>
-                <input
-                  type="password"
-                  value={password()}
-                  onInput={(event) => setPassword(event.currentTarget.value)}
-                  placeholder="••••••••"
-                  disabled={isAnySubmitting()}
-                  class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-                />
-              </label>
+            <div class="mt-8 space-y-6 rounded-[2rem] border border-border/70 bg-background/70 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.75)] backdrop-blur md:p-8">
+              <h1 class="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">Google 계정으로 로그인</h1>
               <Show when={errorMessage()}>
                 {(message) => (
                   <div class="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
@@ -182,13 +133,8 @@ export default function LoginPage() {
                   </Show>
                 }
               >
-                <div class="pt-2">
-                  <div class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
-                    <span class="h-px flex-1 bg-border" />
-                    <span>또는</span>
-                    <span class="h-px flex-1 bg-border" />
-                  </div>
-                  <div class="relative mt-4 min-h-[52px]">
+                <div class="pt-1">
+                  <div class="relative min-h-[52px]">
                     <div ref={googleButtonContainer} class="flex min-h-[52px] w-full items-center justify-center" />
                     <Show when={isGoogleLoading()}>
                       <div class="absolute inset-0 flex items-center justify-center px-4 text-sm text-muted-foreground">
@@ -210,24 +156,12 @@ export default function LoginPage() {
                   </Show>
                 </div>
               </Show>
-              <div class="mt-8 flex items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                  <A href="/" class="text-sm font-medium text-accent transition-colors hover:text-foreground">
-                    메인으로
-                  </A>
-                  <A href={`/signup?next=${encodeURIComponent(nextPath())}`} class="text-sm font-medium text-accent transition-colors hover:text-foreground">
-                    회원가입
-                  </A>
-                </div>
-                <button
-                  type="submit"
-                  disabled={isAnySubmitting()}
-                  class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
-                >
-                  {isSubmitting() ? '로그인 중…' : '로그인하기'}
-                </button>
+              <div class="flex items-center justify-between gap-4 pt-2">
+                <A href="/" class="text-sm font-medium text-accent transition-colors hover:text-foreground">
+                  메인으로
+                </A>
               </div>
-            </form>
+            </div>
           </div>
         </section>
       </main>

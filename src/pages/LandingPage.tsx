@@ -26,20 +26,12 @@ export default function LandingPage() {
             <Show
               when={auth.isAuthenticated()}
               fallback={
-                <div class="flex items-center gap-3">
-                  <A
-                    href="/signup?next=%2Fdashboard"
-                    class="inline-flex items-center justify-center rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5"
-                  >
-                    회원가입
-                  </A>
-                  <A
-                    href="/login?next=%2Fdashboard"
-                    class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
-                  >
-                    로그인하기
-                  </A>
-                </div>
+                <A
+                  href="/login?next=%2Fdashboard"
+                  class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                >
+                  Google로 시작하기
+                </A>
               }
             >
               <A

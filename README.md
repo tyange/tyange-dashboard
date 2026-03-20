@@ -23,7 +23,7 @@ Your app is ready to be deployed!
 
 ## Features
 
-- JWT login/signup flow against `tyange-cms-api`
+- Google login UI backed by `tyange-cms-api` JWT session flow
 - Budget dashboard and active-period spend record views
 - Total-budget setup and active-budget total update actions for an active date range
 - Per-user API key management page at `/api-keys` for issuing and revoking keys used with `X-API-Key`

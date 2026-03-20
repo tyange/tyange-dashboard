@@ -13,7 +13,6 @@ import NotificationsPage from './features/notifications/components/Notifications
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
-import SignupPage from './pages/SignupPage'
 import { ThemeProvider } from './theme/ThemeProvider'
 
 function AppShell(props: ParentProps) {
@@ -41,7 +40,7 @@ function App() {
         <Router root={AppShell}>
           <Route path="/" component={LandingPage} />
           <Route path="/login" component={LoginPage} />
-          <Route path="/signup" component={SignupPage} />
+          <Route path="/signup" component={() => <Navigate href="/login" />} />
           <Route
             path="/dashboard"
             component={() => (

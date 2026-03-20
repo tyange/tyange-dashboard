@@ -46,9 +46,8 @@ Last updated: 2026-03-20 (Asia/Seoul)
 - Theme switching uses `html[data-theme="light" | "dark"]` with persisted preference key `ui-theme`; `system` is the default mode
 - Keep API fetch logic in `src/features/budget/api.ts`
 - Public landing page lives at `/` and only introduces the app plus login guidance
-- Login page lives at `/login` and calls the CMS API `/login` endpoint with `user_id` + `password`
-- Login page keeps the existing `user_id` + `password` flow and additionally supports Google Identity Services button login via CMS API `POST /login/google`
-- Signup page lives at `/signup` and calls the CMS API `/signup` endpoint with `email` + `password`, then auto-logs in via `/login`
+- Login page lives at `/login` and exposes only Google Identity Services login UI backed by CMS API `POST /login/google`
+- `/signup` is no longer exposed in the UI and redirects to `/login`; legacy login/signup APIs remain untouched on the backend side
 - Protected pages live at `/dashboard`, `/subscriptions`, `/settings`, `/records`, `/budget/setup`, and `/match`; unauthenticated access redirects to `/login?next=...`
 - `/api-keys` redirects to `/settings`, `/notifications` redirects to `/subscriptions`, and `/feed` redirects to `/dashboard`
 - Protected default home at `/dashboard` is the notifications feed home; primary navigation is `새 글`, `구독`, `설정`
