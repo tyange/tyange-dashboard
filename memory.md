@@ -1,6 +1,6 @@
 # Tyange Dashboard Memory
 
-Last updated: 2026-03-20 (Asia/Seoul)
+Last updated: 2026-03-23 (Asia/Seoul)
 
 ## Project Snapshot
 - Frontend: SolidJS + TypeScript + Vite
@@ -34,6 +34,9 @@ Last updated: 2026-03-20 (Asia/Seoul)
 - API key management UI: `src/features/api-keys/*`
 - Notifications/RSS management UI: `src/features/notifications/*`
 - Match UI: `src/features/match/*`
+- Match profile page UI: `src/features/match/components/ProfilePage.tsx`
+- Match presentation helpers: `src/features/match/presentation.ts`
+- Match local profile draft storage: `src/features/match/profileDraft.ts`
 - Budget domain: `src/features/budget/*`
 - Main API layer: `src/features/budget/api.ts`
 - Custom PWA service worker: `src/sw.ts`
@@ -48,19 +51,33 @@ Last updated: 2026-03-20 (Asia/Seoul)
 - Public landing page lives at `/` and only introduces the app plus login guidance
 - Login page lives at `/login` and exposes only Google Identity Services login UI backed by CMS API `POST /login/google`
 - `/signup` is no longer exposed in the UI and redirects to `/login`; legacy login/signup APIs remain untouched on the backend side
-- Protected pages live at `/dashboard`, `/subscriptions`, `/settings`, `/records`, `/budget/setup`, and `/match`; unauthenticated access redirects to `/login?next=...`
-- `/api-keys` redirects to `/settings`, `/notifications` redirects to `/subscriptions`, and `/feed` redirects to `/dashboard`
-- Protected default home at `/dashboard` is the notifications feed home; primary navigation is `새 글`, `구독`, `설정`
-- Feed home at `/dashboard` uses authenticated `GET /feed/items` and shows aggregated RSS items plus unread summary
+- Protected pages live at `/dashboard`, `/subscriptions`, `/settings`, `/records`, and `/budget/setup`; unauthenticated access redirects to `/login?next=...`
+- `/api-keys` redirects to `/settings`, `/notifications` redirects to `/subscriptions`, `/feed` redirects to `/subscriptions`, and `/match` redirects to `/dashboard`
+- Protected default home at `/dashboard` is the 1:1 message hub; primary navigation is `타임라인`, `설정`
+- Protected profile page lives at `/profile/:userId`; the top header exposes it through a compact profile trigger instead of a primary nav tab
+- `/match` redirects to `/dashboard`; the dedicated match route surface is removed in favor of the main home timeline
+- `/subscriptions`, `/notifications`, `/feed`는 현재 모두 `/settings`로 보낸다
+- `GET /feed/items` 응답의 `unread_count` / `item.read`는 현재 UI 의미에 사용하지 않는다
+- 메시지 허브 composer는 클라이언트에서 140자 제한을 강제한다
+- 1:1 메시지 허브는 트위터형 단일 타임라인 컬럼을 우선하고, 카드로 화면을 과도하게 분절하지 않는다
+- 메시지 허브와 프로필 페이지는 설명 문구를 최소화하고, 상태 안내도 한두 줄 이내의 유틸리티 카피로 유지한다
+- 대시보드 첫 화면은 `1:1 TIMELINE` 라벨과 입력 영역만 남기고, 설명성 헤드라인과 빈 상태 문구를 두지 않는다
+- 프로필 페이지는 현재 `user_id`와 활성 매칭 상태만으로 구성한 placeholder 프로필을 사용하며, 실제 avatar/bio/display name API가 들어오기 전까지 결정적 파생값을 노출한다
 - Settings page includes API key management for the currently logged-in user
-- Subscriptions page manages the current user's RSS subscriptions and current-browser web push registration
+- Settings page also manages the current user's local profile draft and current 1:1 match status/teardown
+- 알림 관리는 설정 페이지 내부 섹션으로만 노출하고, 등록된 브라우저 알림 목록은 해당 섹션 바로 아래에 보여준다
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
 - Email/password login and Google login both converge on the same stored JWT session shape in `localStorage`
-- Top floating authenticated navigation bar uses centered pill style (blur + translucent background + scroll shadow)
+- Authenticated navigation uses a top header with pill-style tabs instead of a sidebar
+- Authenticated layout owns the effective max width for both header and main content; page-level custom max-width wrappers는 최소화한다
+- Authenticated header keeps the primary tabs as `타임라인`, `설정` only; profile access is handled by a right-side identity chip
+- 보호 화면 헤더는 별도 브랜드/로고 행 없이 탭과 사용자 액션만 한 줄로 유지한다
+- 보호 화면 헤더는 하단 border 없이 중성 배경만 유지한다
+- 보호 화면 헤더/배경은 강한 장식색보다 중성 베이스를 우선하고, 모바일에서는 배지성 원형 요소를 최소화한다
 - API errors are surfaced in UI as a top error alert block
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
 - 1:1 매칭 페이지는 `GET /match/me`, `POST /match/request`, `POST /match/:match_id/respond`, `DELETE /match/me`, `GET/POST /match/messages`를 사용하며, `pending`이면 신청/응답 상태를, `matched`이면 메시지 타임라인을 렌더링한다
-- 알림 관리 페이지는 초기 진입 시 `/push/public-key`, `/push/subscriptions`, `/rss-sources`를 함께 조회하고, 브라우저 로컬 `PushSubscription`과 서버 저장 구독을 정합해 현재 브라우저 상태를 표시한다
+- 알림 관리 페이지는 초기 진입 시 `/push/public-key`, `/push/subscriptions`를 조회하고, 브라우저 로컬 `PushSubscription`과 서버 저장 구독을 정합해 현재 브라우저 상태를 표시한다
 - `/push/public-key`의 503은 서버 미설정 정상 분기이며, 알림 페이지는 이를 `unavailable` 상태로 처리해 푸시 등록 CTA를 비활성화하고 안내 문구를 보여준다
 - 웹 푸시는 Vite PWA `injectManifest` 기반 커스텀 서비스 워커(`src/sw.ts`)에서 `push`와 `notificationclick`을 처리하며, 페이지 컴포넌트에는 서비스 워커 로직을 넣지 않는다
 - 개발 서버에서도 알림 등록 플로우를 검증할 수 있도록 Vite PWA `devOptions.enabled`를 켜 둔다
@@ -79,6 +96,8 @@ Last updated: 2026-03-20 (Asia/Seoul)
 - 401은 세션 만료 메시지, 404는 활성 예산/기록 없음 메시지, 400 엑셀 계산 오류는 파일/입력값 오류 메시지로 매핑한다
 - 보호 페이지 UI는 무거운 반복 카드보다 화면 목적에 맞는 정보 밀도를 우선하고, 관리 화면은 `문서형 헤더 + 인라인 통계 + 평평한 섹션 + 테이블/행` 패턴을 사용한다
 - 보호 페이지의 페이지/섹션 헤더는 기본적으로 제목만 남기고 소개성 설명 문장은 두지 않는다
+- 설정 페이지에서는 form 입력 요소의 underline만 유지하고, 섹션/표/상태 블록에는 기본적으로 수평 구분선을 두지 않는다
+- 설정 페이지의 API 키 목록과 브라우저 알림 목록은 무경계 표 형태를 유지한다
 - 사용자 노출 문구에서는 `활성`보다 `현재` 또는 `적용` 표현을 우선 사용한다
 
 ## Data Contracts (Budget)

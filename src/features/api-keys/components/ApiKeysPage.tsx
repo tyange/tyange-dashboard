@@ -119,9 +119,9 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
   }
 
   const ghostButton =
-    'inline-flex h-11 items-center justify-center rounded-full border border-border/70 bg-card/82 px-4 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex h-10 items-center justify-center rounded-full border border-border/70 px-4 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60'
   const primaryButton =
-    'inline-flex h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
 
   return (
     <section class={props.embedded ? 'space-y-8' : 'space-y-8 pb-10'}>
@@ -135,23 +135,23 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
           </header>
         }
       >
-        <header class="pt-8">
+        <header>
           <div>
             <h2 class="text-2xl font-semibold tracking-tight text-foreground">API 키</h2>
           </div>
         </header>
       </Show>
 
-      <div class={props.embedded ? 'border-b border-border/70 pb-5' : 'border-b border-border/70 py-5'}>
+      <div class="pb-5">
         <div class="grid gap-4">
-          <label class="block">
+          <label class="block max-w-xl">
             <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-muted-foreground">이름</span>
             <input
               type="text"
               value={nameInput()}
               onInput={(event) => setNameInput(event.currentTarget.value)}
               placeholder="예: macrodroid-main-phone"
-              class="w-full rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent"
+              class="w-full border-b border-border/80 bg-transparent px-0 py-3 text-sm text-foreground outline-none transition focus:border-foreground"
             />
           </label>
 
@@ -160,16 +160,12 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
               {creating() ? '발급 중...' : 'API 키 발급'}
             </button>
           </div>
-
-          <p class="text-sm leading-6 text-muted-foreground">
-            `POST /budget/spending` 호출 시 `X-API-Key` 헤더로 사용할 수 있습니다.
-          </p>
         </div>
       </div>
 
       <Show when={errorMessage()}>
         {(message) => (
-          <div class="rounded-2xl border border-rose-400/30 bg-rose-500/8 px-4 py-3 text-sm text-rose-600">
+          <div class="px-1 py-3 text-sm text-rose-600">
             {message()}
           </div>
         )}
@@ -177,7 +173,7 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
 
       <Show when={successMessage()}>
         {(message) => (
-          <div class="rounded-2xl border border-emerald-400/30 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-600">
+          <div class="px-1 py-3 text-sm text-emerald-600">
             {message()}
           </div>
         )}
@@ -185,11 +181,11 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
 
       <Show when={issuedApiKey()}>
         {(apiKey) => (
-          <section class="rounded-[1.5rem] border border-sky-400/24 bg-sky-500/8 p-5">
+          <section class="py-5">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-sky-700">이번 한 번만 표시되는 API 키</p>
-                <p class="mt-3 break-all rounded-2xl border border-border/70 bg-background/88 px-4 py-3 font-mono text-sm text-foreground">
+                <p class="mt-3 break-all px-1 py-3 font-mono text-sm text-foreground">
                   {apiKey()}
                 </p>
                 <p class="mt-3 text-xs leading-5 text-muted-foreground">
@@ -214,9 +210,9 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
 
         <Show when={!loading()} fallback={<p class="text-sm text-muted-foreground">목록을 불러오는 중...</p>}>
           <Show when={apiKeys().length > 0} fallback={<p class="text-sm text-muted-foreground">아직 발급된 API 키가 없습니다.</p>}>
-            <div class="overflow-x-auto rounded-[1.25rem] border border-border/70">
+            <div class="overflow-x-auto">
               <table class="min-w-full border-collapse text-left text-sm">
-                <thead class="bg-secondary/65 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                <thead class="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                   <tr>
                     <th class="px-4 py-3 font-medium">이름</th>
                     <th class="px-4 py-3 font-medium">상태</th>
@@ -226,10 +222,10 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
                     <th class="px-4 py-3 font-medium">관리</th>
                   </tr>
                 </thead>
-                <tbody class="bg-card/65">
+                <tbody>
                   <For each={apiKeys()}>
                     {(record) => (
-                      <tr class="border-t border-border/60">
+                      <tr>
                         <td class="px-4 py-3 align-middle text-base font-medium text-foreground">{record.name}</td>
                         <td class="px-4 py-3 align-middle">
                           <span
@@ -251,7 +247,7 @@ export default function ApiKeysPage(props: ApiKeysPageProps) {
                               type="button"
                               onClick={() => void handleRevoke(record.id)}
                               disabled={revokingId() === record.id}
-                              class="inline-flex h-10 items-center justify-center rounded-full border border-rose-400/30 px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-500/8 disabled:cursor-not-allowed disabled:opacity-60"
+                              class="inline-flex h-9 items-center justify-center rounded-full border border-rose-400/30 px-4 text-sm font-medium text-rose-600 transition hover:bg-rose-500/8 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {revokingId() === record.id ? '폐기 중...' : '폐기'}
                             </button>

@@ -5,24 +5,14 @@ const authSession = {
   refresh_token: 'playwright-refresh-token',
   user_id: 'playwright-user',
   user_role: 'user',
+} as const
+
+type MatchFixture = {
+  match: Record<string, unknown> | null
+  messages?: Array<Record<string, unknown>>
 }
 
-function budgetSummary(overrides?: Partial<Record<string, unknown>>) {
-  return {
-    budget_id: 1,
-    total_budget: 2_500_000,
-    from_date: '2026-02-22',
-    to_date: '2026-03-21',
-    total_spent: 2_440_311,
-    remaining_budget: 59_689,
-    usage_rate: 0.9761244,
-    alert: false,
-    alert_threshold: 0.85,
-    ...overrides,
-  }
-}
-
-async function mockAuthenticatedBudgetApp(page: Parameters<typeof test>[0]['page'], summaryOverrides?: Partial<Record<string, unknown>>) {
+async function mockAuthenticatedMatchApp(page: Parameters<typeof test>[0]['page'], fixture: MatchFixture) {
   await page.addInitScript((session) => {
     window.localStorage.setItem('tyange-dashboard.auth', JSON.stringify(session))
   }, authSession)
@@ -38,70 +28,98 @@ async function mockAuthenticatedBudgetApp(page: Parameters<typeof test>[0]['page
     })
   })
 
-  await page.route('**/budget', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.continue()
-      return
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(budgetSummary(summaryOverrides)),
-    })
-  })
-
-  await page.route('**/budget/spending', async (route) => {
+  await page.route('**/match/me', async (route) => {
     if (route.request().method() !== 'GET') {
       await route.fulfill({ status: 204, body: '' })
       return
     }
 
-    const summary = budgetSummary(summaryOverrides)
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(fixture.match),
+    })
+  })
+
+  await page.route('**/match/messages', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message_id: 99,
+          match_id: 14,
+          sender_user_id: authSession.user_id,
+          receiver_user_id: 'partner@example.com',
+          content: '새 메시지',
+          created_at: '2026-03-22 14:00:00',
+        }),
+      })
+      return
+    }
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        budget_id: summary.budget_id,
-        from_date: summary.from_date,
-        to_date: summary.to_date,
-        total_spent: summary.total_spent,
-        remaining: summary.remaining_budget,
-        weeks: [],
+        match_id: 14,
+        counterpart_user_id: 'partner@example.com',
+        messages: fixture.messages ?? [],
       }),
     })
   })
 }
 
-test('dashboard removes records card and exposes records link inside spend card', async ({ page }) => {
-  await mockAuthenticatedBudgetApp(page)
+test('dashboard shows connect state when no active match exists', async ({ page }) => {
+  await mockAuthenticatedMatchApp(page, { match: null })
 
   await page.goto('/dashboard')
 
-  await expect(page.getByRole('heading', { name: '현재 적용 예산' })).toBeVisible()
-  await expect(page.getByText('98% 사용')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '열기' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '소비 기록 보기' })).toBeVisible()
-
-  await page.getByRole('button', { name: '소비 기록 보기' }).click()
-  await expect(page).toHaveURL(/\/records$/)
-  await expect(page.getByRole('heading', { name: '소비 기록' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '한 사람과의 대화를 타임라인처럼 이어가세요' })).toBeVisible()
+  await expect(page.getByText('상대 사용자 ID', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '요청 보내기' })).toBeVisible()
 })
 
-test('dashboard uses green ring in normal state', async ({ page }) => {
-  await mockAuthenticatedBudgetApp(page, { alert: false, remaining_budget: 59_689, usage_rate: 0.74 })
+test('dashboard links to counterpart profile and shows recent conversation preview', async ({ page }) => {
+  await mockAuthenticatedMatchApp(page, {
+    match: {
+      match_id: 14,
+      status: 'matched',
+      requester_user_id: authSession.user_id,
+      target_user_id: 'partner@example.com',
+      counterpart_user_id: 'partner@example.com',
+      created_at: '2026-03-21 09:00:00',
+      responded_at: '2026-03-21 09:30:00',
+    },
+    messages: [
+      {
+        message_id: 1,
+        match_id: 14,
+        sender_user_id: authSession.user_id,
+        receiver_user_id: 'partner@example.com',
+        content: '첫 인사',
+        created_at: '2026-03-21 10:00:00',
+      },
+      {
+        message_id: 2,
+        match_id: 14,
+        sender_user_id: 'partner@example.com',
+        receiver_user_id: authSession.user_id,
+        content: '답장 하나',
+        created_at: '2026-03-21 10:30:00',
+      },
+    ],
+  })
 
   await page.goto('/dashboard')
 
-  const ring = page.locator('#active-budget [style*="conic-gradient"]').first()
-  await expect(ring).toHaveAttribute('style', /rgb\(32,\s*201,\s*151\)/)
-})
+  await expect(page.getByText('2개 메시지')).toBeVisible()
+  await expect(page.getByRole('link', { name: '@partner@example.com' }).first()).toBeVisible()
+  await expect(page.getByText('답장 하나')).toBeVisible()
 
-test('dashboard uses red remaining budget treatment in overspent state', async ({ page }) => {
-  await mockAuthenticatedBudgetApp(page, { alert: true, remaining_budget: -15_000, usage_rate: 0.91, is_overspent: true })
+  await page.getByRole('link', { name: '@partner@example.com' }).first().click()
 
-  await page.goto('/dashboard')
-
-  await expect(page.getByText('-₩15,000')).toHaveClass(/text-red-400/)
-  await expect(page.getByText('총 예산 ₩2,500,000')).toBeVisible()
+  await expect(page).toHaveURL(/\/profile\/partner%40example\.com$/)
+  await expect(page.getByRole('heading', { name: '최근 대화' })).toBeVisible()
+  await expect(page.getByText('답장 하나')).toBeVisible()
 })

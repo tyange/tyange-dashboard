@@ -242,22 +242,19 @@ export default function BrowserAlertsSettingsSection(props: BrowserAlertsSetting
   }
 
   const ghostButton =
-    'inline-flex h-11 items-center justify-center rounded-full border border-border/70 bg-card/82 px-4 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex h-10 items-center justify-center rounded-full border border-border/70 px-4 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60'
   const primaryButton =
-    'inline-flex h-11 items-center justify-center rounded-full bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
-  const statCell = 'rounded-2xl border border-border/70 bg-background/78 px-4 py-4'
+    'inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60'
 
   return (
-    <section class="pt-8">
+    <section class="py-6">
       <div class="flex items-end justify-between gap-4">
-        <h2 class="text-2xl font-semibold tracking-tight text-foreground">
-          {props.title ?? '현재 브라우저 알림'}
-        </h2>
+        <h2 class="text-2xl font-semibold tracking-tight text-foreground">{props.title ?? '현재 브라우저 알림'}</h2>
       </div>
 
       <Show when={pushErrorMessage()}>
         {(message) => (
-          <div class="mt-4 rounded-2xl border border-rose-400/30 bg-rose-500/8 px-4 py-3 text-sm text-rose-600">
+          <div class="mt-4 px-1 py-3 text-sm text-rose-600">
             {message()}
           </div>
         )}
@@ -265,32 +262,28 @@ export default function BrowserAlertsSettingsSection(props: BrowserAlertsSetting
 
       <Show when={pushSuccessMessage()}>
         {(message) => (
-          <div class="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-600">
+          <div class="mt-4 px-1 py-3 text-sm text-emerald-600">
             {message()}
           </div>
         )}
       </Show>
 
       <Show when={!pushLoading()} fallback={<p class="mt-6 text-sm text-muted-foreground">알림 상태를 불러오는 중...</p>}>
-        <div class="mt-6 space-y-4">
-          <div class="grid gap-3 md:grid-cols-3">
-            <div class={statCell}>
+        <div class="mt-6 space-y-5">
+          <div class="grid gap-4 md:grid-cols-3">
+            <div>
               <p class="text-xs uppercase tracking-[0.16em] text-muted-foreground">권한</p>
-              <p class="mt-2 text-2xl font-semibold text-foreground">{formatPermissionLabel(notificationPermission())}</p>
+              <p class="mt-2 text-lg font-semibold text-foreground">{formatPermissionLabel(notificationPermission())}</p>
             </div>
-            <div class={statCell}>
+            <div>
               <p class="text-xs uppercase tracking-[0.16em] text-muted-foreground">상태</p>
-              <p class="mt-2 text-2xl font-semibold text-foreground">
-                {syncStatusLabel(
-                  pushPublicKeyAvailability(),
-                  browserPushStatus().serverHasCurrentBrowser,
-                  pushSupport.supported,
-                )}
+              <p class="mt-2 text-lg font-semibold text-foreground">
+                {syncStatusLabel(pushPublicKeyAvailability(), browserPushStatus().serverHasCurrentBrowser, pushSupport.supported)}
               </p>
             </div>
-            <div class={statCell}>
+            <div>
               <p class="text-xs uppercase tracking-[0.16em] text-muted-foreground">서버 저장</p>
-              <p class="mt-2 text-2xl font-semibold text-foreground">{pushSubscriptions().length}개</p>
+              <p class="mt-2 text-lg font-semibold text-foreground">{pushSubscriptions().length}개</p>
             </div>
           </div>
 
@@ -319,78 +312,66 @@ export default function BrowserAlertsSettingsSection(props: BrowserAlertsSetting
           </div>
 
           <Show when={pushPublicKeyAvailability() === 'unavailable'}>
-            <div class="rounded-2xl border border-sky-400/24 bg-sky-500/8 px-4 py-3 text-sm text-sky-700">
+            <div class="px-1 py-3 text-sm text-sky-700">
               서버 알림 기능이 아직 준비되지 않았습니다.
             </div>
           </Show>
 
-          <Show when={props.showTechnicalDetails}>
-            <details class="rounded-[1.25rem] border border-border/70 bg-card/65">
-              <summary class="cursor-pointer px-4 py-3 text-sm font-medium text-foreground">
-                고급 정보 보기
-              </summary>
-              <div class="px-4 py-4">
-                <Show when={browserPushStatus().localPayload}>
-                  {(payload) => (
-                    <div class="rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-muted-foreground">
-                      <p class="font-medium text-foreground">로컬 엔드포인트</p>
-                      <p class="mt-1 break-all">{payload().endpoint}</p>
-                    </div>
-                  )}
-                </Show>
-
-                <div class="mt-4 overflow-x-auto rounded-[1rem] border border-border/70">
-                  <table class="min-w-full border-collapse text-left text-sm">
-                    <thead class="bg-secondary/65 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+          <div class="pt-4">
+            <h3 class="text-sm font-semibold text-foreground">등록된 알림</h3>
+            <div class="mt-3 overflow-x-auto">
+              <table class="min-w-full border-collapse text-left text-sm">
+                <thead class="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                  <tr>
+                    <th class="px-4 py-3 font-medium">엔드포인트</th>
+                    <th class="px-4 py-3 font-medium">상태</th>
+                    <th class="px-4 py-3 font-medium">생성일</th>
+                    <th class="px-4 py-3 font-medium">수정일</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <Show
+                    when={pushSubscriptions().length > 0}
+                    fallback={
                       <tr>
-                        <th class="px-4 py-3 font-medium">엔드포인트</th>
-                        <th class="px-4 py-3 font-medium">상태</th>
-                        <th class="px-4 py-3 font-medium">생성일</th>
-                        <th class="px-4 py-3 font-medium">수정일</th>
+                        <td colspan="4" class="px-4 py-4 text-muted-foreground">
+                          저장된 브라우저 알림이 없습니다.
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody class="bg-card/65">
-                      <Show
-                        when={pushSubscriptions().length > 0}
-                        fallback={
-                          <tr>
-                            <td colspan="4" class="px-4 py-4 text-muted-foreground">
-                              저장된 브라우저 알림이 없습니다.
-                            </td>
-                          </tr>
-                        }
-                      >
-                        <For each={pushSubscriptions()}>
-                          {(subscription) => (
-                            <tr class="border-t border-border/60">
-                              <td class="px-4 py-3 align-middle text-foreground">
-                                {summarizeEndpoint(subscription.endpoint)}
-                              </td>
-                              <td class="px-4 py-3 align-middle">
-                                <Show
-                                  when={browserPushStatus().matchedServerSubscription?.endpoint === subscription.endpoint}
-                                  fallback={<span class="text-muted-foreground">사용 중</span>}
-                                >
-                                  <span class="rounded-full bg-emerald-500/14 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                                    이 브라우저
-                                  </span>
-                                </Show>
-                              </td>
-                              <td class="px-4 py-3 align-middle text-muted-foreground">
-                                {formatDateTime(subscription.created_at)}
-                              </td>
-                              <td class="px-4 py-3 align-middle text-muted-foreground">
-                                {formatDateTime(subscription.updated_at)}
-                              </td>
-                            </tr>
-                          )}
-                        </For>
-                      </Show>
-                    </tbody>
-                  </table>
-                </div>
+                    }
+                  >
+                    <For each={pushSubscriptions()}>
+                      {(subscription) => (
+                        <tr>
+                          <td class="px-4 py-3 align-middle text-foreground">{summarizeEndpoint(subscription.endpoint)}</td>
+                          <td class="px-4 py-3 align-middle">
+                            <Show
+                              when={browserPushStatus().matchedServerSubscription?.endpoint === subscription.endpoint}
+                              fallback={<span class="text-muted-foreground">사용 중</span>}
+                            >
+                              <span class="rounded-full bg-emerald-500/14 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                                이 브라우저
+                              </span>
+                            </Show>
+                          </td>
+                          <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(subscription.created_at)}</td>
+                          <td class="px-4 py-3 align-middle text-muted-foreground">{formatDateTime(subscription.updated_at)}</td>
+                        </tr>
+                      )}
+                    </For>
+                  </Show>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <Show when={props.showTechnicalDetails && browserPushStatus().localPayload}>
+            {(payload) => (
+              <div class="pt-4">
+                <p class="text-sm font-medium text-foreground">로컬 엔드포인트</p>
+                <p class="mt-2 break-all text-sm text-muted-foreground">{payload().endpoint}</p>
               </div>
-            </details>
+            )}
           </Show>
         </div>
       </Show>

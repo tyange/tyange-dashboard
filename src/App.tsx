@@ -8,8 +8,7 @@ import AppFooter from './components/AppFooter'
 import BudgetSetupPage from './features/budget/components/BudgetSetupPage'
 import SpendRecordsRoutePage from './features/budget/components/SpendRecordsRoutePage'
 import MatchPage from './features/match/components/MatchPage'
-import FeedHomePage from './features/notifications/components/FeedHomePage'
-import NotificationsPage from './features/notifications/components/NotificationsPage'
+import ProfilePage from './features/match/components/ProfilePage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
@@ -45,23 +44,27 @@ function App() {
             path="/dashboard"
             component={() => (
               <ProtectedAppShell>
-                <FeedHomePage />
+                <MatchPage />
               </ProtectedAppShell>
             )}
           />
           <Route
             path="/subscriptions"
-            component={() => (
-              <ProtectedAppShell>
-                <NotificationsPage />
-              </ProtectedAppShell>
-            )}
+            component={() => <Navigate href="/settings" />}
           />
           <Route
             path="/settings"
             component={() => (
               <ProtectedAppShell>
                 <SettingsPage />
+              </ProtectedAppShell>
+            )}
+          />
+          <Route
+            path="/profile/:userId"
+            component={() => (
+              <ProtectedAppShell>
+                <ProfilePage />
               </ProtectedAppShell>
             )}
           />
@@ -81,17 +84,10 @@ function App() {
               </ProtectedAppShell>
             )}
           />
-          <Route
-            path="/match"
-            component={() => (
-              <ProtectedAppShell>
-                <MatchPage />
-              </ProtectedAppShell>
-            )}
-          />
           <Route path="/api-keys" component={() => <Navigate href="/settings" />} />
-          <Route path="/notifications" component={() => <Navigate href="/subscriptions" />} />
-          <Route path="/feed" component={() => <Navigate href="/dashboard" />} />
+          <Route path="/notifications" component={() => <Navigate href="/settings" />} />
+          <Route path="/feed" component={() => <Navigate href="/settings" />} />
+          <Route path="/match" component={() => <Navigate href="/dashboard" />} />
         </Router>
       </AuthProvider>
     </ThemeProvider>

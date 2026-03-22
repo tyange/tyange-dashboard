@@ -1,126 +1,91 @@
 import { A, useLocation, useNavigate } from '@solidjs/router'
-import { For, Show, createSignal, onCleanup, onMount } from 'solid-js'
+import { For, Show } from 'solid-js'
 import type { ParentProps } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
+import { loadProfileDraft } from '../features/match/profileDraft'
+import { buildProfileViewModel, toProfileHref } from '../features/match/presentation'
 import ThemeToggle from './ThemeToggle'
 
 export default function AuthenticatedLayout(props: ParentProps) {
   const auth = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [isScrolled, setIsScrolled] = createSignal(false)
-  const [menuOpen, setMenuOpen] = createSignal(false)
 
   const navItems = [
-    { href: '/dashboard', label: '새 글' },
-    { href: '/subscriptions', label: '구독' },
+    { href: '/dashboard', label: '타임라인' },
     { href: '/settings', label: '설정' },
   ] as const
 
-  onMount(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10)
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setMenuOpen(false)
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    window.addEventListener('resize', handleResize)
-    handleScroll()
-    handleResize()
-
-    onCleanup(() => {
-      window.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleResize)
-    })
-  })
-
   const logout = () => {
-    setMenuOpen(false)
     auth.logout()
     void navigate('/')
   }
 
-  const handleNavigate = () => {
-    setMenuOpen(false)
-  }
+  const currentUserId = () => auth.session()?.user_id ?? ''
+  const currentProfile = () =>
+    buildProfileViewModel(currentUserId(), currentUserId(), loadProfileDraft(currentUserId()) ?? undefined)
 
   const navLinkClass = (path: string) =>
-    `inline-flex w-auto items-center justify-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+    `inline-flex h-9 items-center justify-center border-b-2 px-1 text-sm font-semibold transition-colors ${
       location.pathname === path
-        ? 'bg-foreground text-background shadow-[0_10px_24px_color-mix(in_srgb,var(--shadow-color)_16%,transparent)]'
-        : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'
+        ? 'border-foreground text-foreground'
+        : 'border-transparent text-muted-foreground hover:text-foreground'
     }`
 
   return (
-    <div class="mx-auto w-full max-w-6xl px-4 md:px-8">
-      <header class="sticky top-0 z-40 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
-        <div
-          class={`rounded-[1.5rem] border border-border/70 bg-card/82 backdrop-blur-2xl transition-all duration-300 ease-out ${
-            isScrolled() ? 'shadow-[0_18px_40px_color-mix(in_srgb,var(--shadow-color)_18%,transparent)]' : ''
-          }`}
-        >
-          <nav
-            aria-label="Authenticated navigation"
-            class="flex items-center justify-between gap-3 px-3 py-3"
-          >
-            <div class="min-w-0 flex-1">
-              <div class="hidden min-w-0 items-center gap-1 lg:flex">
-                <For each={navItems}>
-                  {(item) => (
-                    <A href={item.href} class={navLinkClass(item.href)} onClick={handleNavigate}>
-                      {item.label}
-                    </A>
-                  )}
-                </For>
-              </div>
-              <div class="lg:hidden">
-                <button
-                  type="button"
-                  aria-expanded={menuOpen()}
-                  aria-controls="mobile-auth-nav"
-                  onClick={() => setMenuOpen((current) => !current)}
-                  class="inline-flex items-center justify-center rounded-full border border-border/70 bg-card/82 px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-                >
-                  메뉴
-                </button>
-              </div>
-            </div>
-            <div class="flex shrink-0 items-center gap-2">
-              <ThemeToggle />
-              <Show when={auth.isAuthenticated()}>
-                <button
-                  type="button"
-                  onClick={logout}
-                  class="shrink-0 rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
-                >
-                  로그아웃
-                </button>
-              </Show>
-            </div>
+    <div class="mx-auto w-full max-w-[56rem] px-4 md:px-6">
+      <header class="sticky top-0 z-40 bg-background/92 backdrop-blur-xl">
+        <div class="flex items-center justify-between gap-3 py-3 pt-[calc(env(safe-area-inset-top)+0.85rem)]">
+          <nav aria-label="Authenticated navigation" class="flex flex-wrap items-center gap-6">
+            <For each={navItems}>
+              {(item) => (
+                <A href={item.href} class={navLinkClass(item.href)}>
+                  {item.label}
+                </A>
+              )}
+            </For>
           </nav>
 
-          <Show when={menuOpen()}>
-            <div
-              id="mobile-auth-nav"
-              class="absolute left-0 top-[calc(100%+0.5rem)] w-[calc(100vw-2rem)] max-w-lg rounded-[1.5rem] border border-border/80 bg-background/98 px-3 pb-3 pt-3 shadow-[0_22px_50px_color-mix(in_srgb,var(--shadow-color)_26%,transparent)] backdrop-blur-2xl lg:hidden"
-            >
-              <div class="flex flex-col items-start gap-2">
-                <For each={navItems}>
-                  {(item) => (
-                    <A href={item.href} class={navLinkClass(item.href)} onClick={handleNavigate}>
-                      {item.label}
-                    </A>
-                  )}
-                </For>
-              </div>
-            </div>
-          </Show>
+          <div class="flex items-center gap-2">
+            <Show when={auth.isAuthenticated()}>
+              <A
+                href={toProfileHref(currentUserId())}
+                class="inline-flex h-9 items-center justify-center rounded-full border border-border/70 px-3 text-sm font-medium text-foreground transition hover:border-foreground/20 md:hidden"
+                aria-label={`${currentProfile().handle} 프로필`}
+              >
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">
+                  {currentProfile().initials}
+                </span>
+              </A>
+            </Show>
+
+            <Show when={auth.isAuthenticated()}>
+              <A
+                href={toProfileHref(currentUserId())}
+                class="hidden items-center gap-2 rounded-full border border-border/70 px-3 py-1.5 text-sm font-medium text-foreground transition hover:border-foreground/20 md:inline-flex"
+              >
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">
+                  {currentProfile().initials}
+                </span>
+                <span class="max-w-[10rem] truncate">{currentProfile().handle}</span>
+              </A>
+            </Show>
+
+            <ThemeToggle />
+            <Show when={auth.isAuthenticated()}>
+              <button
+                type="button"
+                onClick={logout}
+                class="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                로그아웃
+              </button>
+            </Show>
+          </div>
         </div>
       </header>
 
-      <main class="w-full flex-1 px-1.5 pt-8 md:px-3 md:pt-10">{props.children}</main>
+      <main class="w-full pb-12 pt-4 md:pt-5 lg:pt-6">{props.children}</main>
     </div>
   )
 }

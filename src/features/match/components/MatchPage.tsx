@@ -1,49 +1,20 @@
-import { For, Show, createMemo, createSignal, onMount } from 'solid-js'
+import { A } from '@solidjs/router'
+import { For, Show, createEffect, createMemo, createSignal, onMount } from 'solid-js'
 import { useAuth } from '../../../auth/AuthProvider'
 import { createMatch, createMatchMessage, deleteMyMatch, fetchMatchMessages, fetchMyMatch, respondMatch } from '../api'
+import { loadProfileDraft } from '../profileDraft'
+import {
+  buildProfileViewModel,
+  buildTimelineEntries,
+  formatMatchDateTime,
+  getProfileToneClasses,
+  getStatusBadgeClass,
+  getStatusLabel,
+  toProfileHref,
+} from '../presentation'
 import type { MatchMessage, MatchSummary } from '../types'
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return '없음'
-  }
-
-  const date = new Date(value.replace(' ', 'T'))
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return new Intl.DateTimeFormat('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-}
-
-function statusBadgeClass(status: string) {
-  switch (status) {
-    case 'matched':
-      return 'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30'
-    case 'pending':
-      return 'bg-amber-500/15 text-amber-100 border border-amber-400/30'
-    default:
-      return 'bg-white/8 text-white/70 border border-white/10'
-  }
-}
-
-function statusLabel(status: string) {
-  if (status === 'matched') {
-    return '연결됨'
-  }
-
-  if (status === 'pending') {
-    return '응답 대기'
-  }
-
-  return status
-}
+const MESSAGE_LIMIT = 140
 
 export default function MatchPage() {
   const auth = useAuth()
@@ -59,11 +30,54 @@ export default function MatchPage() {
   const [sendingMessage, setSendingMessage] = createSignal(false)
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null)
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null)
+  let messageStreamRef: HTMLDivElement | undefined
 
   const myUserId = createMemo(() => auth.session()?.user_id ?? '')
   const isRequester = createMemo(() => matchSummary()?.requester_user_id === myUserId())
   const isPendingTarget = createMemo(() => matchSummary()?.status === 'pending' && !isRequester())
   const canShowMessages = createMemo(() => matchSummary()?.status === 'matched')
+  const trimmedMessageInput = createMemo(() => messageInput().trim())
+  const remainingCharacters = createMemo(() => MESSAGE_LIMIT - messageInput().length)
+  const canSendMessage = createMemo(() => canShowMessages() && !sendingMessage() && trimmedMessageInput().length > 0)
+  const selfDraft = createMemo(() => loadProfileDraft(myUserId()) ?? undefined)
+  const selfProfile = createMemo(() => buildProfileViewModel(myUserId() || 'me', myUserId(), selfDraft()))
+  const counterpartProfile = createMemo(() => {
+    const counterpartUserId = matchSummary()?.counterpart_user_id
+    return counterpartUserId ? buildProfileViewModel(counterpartUserId, myUserId()) : null
+  })
+  const timelineEntries = createMemo(() => buildTimelineEntries(messages(), myUserId()))
+  const lastMessage = createMemo(() => messages().at(-1) ?? null)
+  const connectionDescription = createMemo(() => {
+    const currentMatch = matchSummary()
+
+    if (!currentMatch) {
+      return '상대 사용자 ID를 입력하면 요청을 보내고, 수락 즉시 이 화면이 1:1 타임라인으로 바뀝니다.'
+    }
+
+    if (currentMatch.status === 'matched') {
+      return '연결이 확정되었습니다. 프로필과 대화 흐름을 같은 화면에서 자연스럽게 오갈 수 있습니다.'
+    }
+
+    if (isPendingTarget()) {
+      return '내가 응답하면 바로 타임라인이 열립니다. 수락 또는 거절을 선택하세요.'
+    }
+
+    return '상대가 이 요청을 확인하는 중입니다. 수락되면 아래 타임라인 composer가 활성화됩니다.'
+  })
+
+  createEffect(() => {
+    messages()
+    queueMicrotask(() => {
+      if (!messageStreamRef) {
+        return
+      }
+
+      messageStreamRef.scrollTo({
+        top: messageStreamRef.scrollHeight,
+        behavior: 'smooth',
+      })
+    })
+  })
 
   const loadMatch = async () => {
     const nextMatch = await fetchMyMatch()
@@ -189,14 +203,7 @@ export default function MatchPage() {
   }
 
   const handleSendMessage = async () => {
-    if (sendingMessage()) {
-      return
-    }
-
-    const content = messageInput().trim()
-    if (!content) {
-      setErrorMessage('메시지 내용을 입력해 주세요.')
-      setSuccessMessage(null)
+    if (!canSendMessage()) {
       return
     }
 
@@ -205,7 +212,7 @@ export default function MatchPage() {
     setSuccessMessage(null)
 
     try {
-      const created = await createMatchMessage(content)
+      const created = await createMatchMessage(trimmedMessageInput())
       setMessages((current) => [...current, created])
       setMessageInput('')
       setSuccessMessage('메시지를 보냈어요.')
@@ -216,272 +223,245 @@ export default function MatchPage() {
     }
   }
 
+  const handleMessageInput = (value: string) => {
+    setMessageInput(value.slice(0, MESSAGE_LIMIT))
+  }
+
+  const handleComposerKeyDown = (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault()
+      void handleSendMessage()
+    }
+  }
+
   return (
-    <section class="space-y-6 pb-10">
-      <div class="relative overflow-hidden rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <div class="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_top_right,rgba(91,168,255,0.24),transparent_48%),radial-gradient(circle_at_top_left,rgba(74,222,128,0.18),transparent_36%)]" />
-        <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div class="max-w-2xl">
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">1:1 Match</p>
-            <h1 class="mt-3 text-3xl font-semibold tracking-tight text-foreground">1:1 트윗 상대 연결</h1>
-            <p class="mt-3 text-sm leading-6 text-muted-foreground">
-              사용자 ID 기준으로 상대를 지정해 연결하고, 연결이 확정되면 짧은 메시지를 주고받을 수 있어요.
-            </p>
+    <section class="page-enter">
+      <Show when={errorMessage()}>
+        {(message) => (
+          <div class="border-b border-rose-500/25 px-1 py-3 text-sm text-rose-700 dark:text-rose-300">
+            {message()}
           </div>
+        )}
+      </Show>
 
-          <button
-            type="button"
-            onClick={() => {
-              setLoading(true)
-              void refreshPage()
-                .catch((error) => {
-                  setErrorMessage((error as Error).message)
-                })
-                .finally(() => {
-                  setLoading(false)
-                })
-            }}
-            class="inline-flex items-center justify-center rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-          >
-            새로고침
-          </button>
-        </div>
+      <Show when={successMessage()}>
+        {(message) => (
+          <div class="border-b border-emerald-500/25 px-1 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+            {message()}
+          </div>
+        )}
+      </Show>
 
-        <Show when={errorMessage()}>
-          {(message) => (
-            <div class="relative mt-5 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {message()}
-            </div>
-          )}
-        </Show>
+      <Show
+        when={!loading()}
+        fallback={
+          <div class="px-1 py-12 text-sm text-muted-foreground">
+            불러오는 중…
+          </div>
+        }
+      >
+        <div>
+          <Show
+            when={matchSummary()}
+            fallback={
+              <div class="px-1 pb-4 pt-4">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">1:1 timeline</p>
+                <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:items-end">
+                  <label class="block min-w-0 flex-1 border-b border-border/80 pb-3">
+                    <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                      상대 사용자 ID
+                    </span>
+                    <input
+                      type="text"
+                      value={targetUserId()}
+                      onInput={(event) => setTargetUserId(event.currentTarget.value)}
+                      placeholder="예: bob@example.com"
+                      class="w-full rounded-none bg-transparent px-0 py-2 text-base text-foreground outline-none placeholder:text-muted-foreground/80"
+                    />
+                  </label>
 
-        <Show when={successMessage()}>
-          {(message) => (
-            <div class="relative mt-5 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-              {message()}
-            </div>
-          )}
-        </Show>
-      </div>
-
-      <Show when={!loading()} fallback={<div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 text-sm text-muted-foreground">불러오는 중…</div>}>
-        <div class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div class="space-y-6">
-            <Show
-              when={matchSummary()}
-              fallback={
-                <div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-                  <h2 class="text-xl font-semibold text-foreground">새 상대 지정</h2>
-                  <p class="mt-2 text-sm leading-6 text-muted-foreground">
-                    연결하려는 사용자 ID를 입력하면 상대에게 1:1 요청이 전송됩니다.
-                  </p>
-
-                  <div class="mt-6 rounded-3xl border border-white/8 bg-black/20 p-4">
-                    <label class="block">
-                      <span class="mb-2 block text-sm font-medium text-foreground">상대 사용자 ID</span>
-                      <input
-                        type="text"
-                        value={targetUserId()}
-                        onInput={(event) => setTargetUserId(event.currentTarget.value)}
-                        placeholder="예: bob@example.com"
-                        class="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-                      />
-                    </label>
-                    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p class="text-xs leading-5 text-muted-foreground">동시에 한 건의 활성 요청 또는 연결만 유지할 수 있어요.</p>
-                      <button
-                        type="button"
-                        onClick={() => void handleCreateMatch()}
-                        disabled={submitting()}
-                        class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {submitting() ? '전송 중…' : '매칭 신청'}
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateMatch()}
+                    disabled={submitting()}
+                    class="inline-flex h-11 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {submitting() ? '전송 중…' : '요청 보내기'}
+                  </button>
                 </div>
-              }
-            >
-              {(currentMatch) => (
-                <div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-                  <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div class="flex items-center gap-3">
-                        <h2 class="text-xl font-semibold text-foreground">현재 상태</h2>
-                        <span class={`rounded-full px-3 py-1 text-xs font-semibold tracking-[0.14em] ${statusBadgeClass(currentMatch().status)}`}>
-                          {statusLabel(currentMatch().status)}
-                        </span>
-                      </div>
-                      <p class="mt-2 text-sm text-muted-foreground">
-                        상대: <span class="font-medium text-foreground">{currentMatch().counterpart_user_id}</span>
-                      </p>
+              </div>
+            }
+          >
+            {(currentMatch) => (
+              <header class="px-1 py-4">
+                <div class="flex items-start gap-3">
+                  <A
+                    href={toProfileHref(currentMatch().counterpart_user_id)}
+                    class={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getProfileToneClasses(counterpartProfile()?.tone ?? selfProfile().tone)} text-sm font-semibold text-foreground`}
+                    aria-label={`${currentMatch().counterpart_user_id} 프로필`}
+                  >
+                    {counterpartProfile()?.initials ?? selfProfile().initials}
+                  </A>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <A
+                        href={toProfileHref(currentMatch().counterpart_user_id)}
+                        class="truncate text-lg font-semibold tracking-tight text-foreground transition hover:text-primary"
+                      >
+                        @{currentMatch().counterpart_user_id}
+                      </A>
+                      <span class={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getStatusBadgeClass(currentMatch().status)}`}>
+                        {getStatusLabel(currentMatch().status)}
+                      </span>
+                      <span class="text-sm text-muted-foreground">
+                        {lastMessage()
+                          ? `${messages().length}개 메시지`
+                          : formatMatchDateTime(currentMatch().created_at)}
+                      </span>
                     </div>
-
+                    <p class="mt-2 text-sm text-muted-foreground">{connectionDescription()}</p>
+                  </div>
+                  <div class="flex shrink-0 items-center gap-2">
+                    <A
+                      href={toProfileHref(currentMatch().counterpart_user_id)}
+                      class="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                    >
+                      프로필
+                    </A>
                     <button
                       type="button"
                       onClick={() => void handleCloseMatch()}
                       disabled={closingMatch()}
-                      class="inline-flex items-center justify-center rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      class="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {closingMatch()
-                        ? '처리 중…'
-                        : currentMatch().status === 'matched'
-                          ? '연결 해제'
-                          : '요청 취소'}
+                      {closingMatch() ? '처리 중…' : currentMatch().status === 'matched' ? '연결 해제' : '요청 취소'}
                     </button>
                   </div>
-
-                  <div class="mt-6 grid gap-3 sm:grid-cols-3">
-                    <div class="rounded-3xl border border-white/8 bg-black/20 p-4">
-                      <p class="text-xs uppercase tracking-[0.16em] text-white/45">내 역할</p>
-                      <p class="mt-2 text-sm font-medium text-foreground">{isRequester() ? '신청자' : '응답자'}</p>
-                    </div>
-                    <div class="rounded-3xl border border-white/8 bg-black/20 p-4">
-                      <p class="text-xs uppercase tracking-[0.16em] text-white/45">요청 시각</p>
-                      <p class="mt-2 text-sm font-medium text-foreground">{formatDateTime(currentMatch().created_at)}</p>
-                    </div>
-                    <div class="rounded-3xl border border-white/8 bg-black/20 p-4">
-                      <p class="text-xs uppercase tracking-[0.16em] text-white/45">응답 시각</p>
-                      <p class="mt-2 text-sm font-medium text-foreground">{formatDateTime(currentMatch().responded_at)}</p>
-                    </div>
-                  </div>
-
-                  <Show when={currentMatch().status === 'pending'}>
-                    <div class="mt-6 rounded-3xl border border-amber-400/20 bg-amber-500/8 p-4">
-                      <Show
-                        when={isPendingTarget()}
-                        fallback={
-                          <div>
-                            <p class="text-sm font-semibold text-amber-100">상대 응답 대기 중</p>
-                            <p class="mt-2 text-sm leading-6 text-amber-50/80">
-                              상대가 수락하면 바로 메시지 타임라인이 열립니다.
-                            </p>
-                          </div>
-                        }
-                      >
-                        <div class="space-y-4">
-                          <div>
-                            <p class="text-sm font-semibold text-amber-100">이 요청에 응답할 차례예요.</p>
-                            <p class="mt-2 text-sm leading-6 text-amber-50/80">
-                              수락하면 1:1 메시지를 주고받을 수 있고, 거절하면 이 요청은 종료됩니다.
-                            </p>
-                          </div>
-                          <div class="flex flex-col gap-3 sm:flex-row">
-                            <button
-                              type="button"
-                              onClick={() => void handleRespond('accept')}
-                              disabled={respondingAction() !== null}
-                              class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {respondingAction() === 'accept' ? '수락 중…' : '수락'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleRespond('reject')}
-                              disabled={respondingAction() !== null}
-                              class="inline-flex items-center justify-center rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {respondingAction() === 'reject' ? '거절 중…' : '거절'}
-                            </button>
-                          </div>
-                        </div>
-                      </Show>
-                    </div>
-                  </Show>
-                </div>
-              )}
-            </Show>
-          </div>
-
-          <div class="rounded-[2rem] border border-white/10 bg-card/80 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Timeline</p>
-                <h2 class="mt-2 text-xl font-semibold text-foreground">1:1 메시지</h2>
-              </div>
-              <Show when={canShowMessages()}>
-                <button
-                  type="button"
-                  onClick={() => void loadMessages().catch((error) => setErrorMessage((error as Error).message))}
-                  class="inline-flex items-center justify-center rounded-full border border-white/12 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-                >
-                  새로고침
-                </button>
-              </Show>
-            </div>
-
-            <Show
-              when={canShowMessages()}
-              fallback={
-                <div class="mt-6 rounded-3xl border border-white/8 bg-black/20 p-5 text-sm leading-6 text-muted-foreground">
-                  연결이 확정되면 여기서 상대와 짧은 메시지를 주고받을 수 있어요.
-                </div>
-              }
-            >
-              <div class="mt-6 space-y-4">
-                <div class="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
-                  <Show
-                    when={!messagesLoading()}
-                    fallback={<div class="rounded-3xl border border-white/8 bg-black/20 p-4 text-sm text-muted-foreground">메시지를 불러오는 중…</div>}
-                  >
-                    <Show
-                      when={messages().length > 0}
-                      fallback={<div class="rounded-3xl border border-white/8 bg-black/20 p-4 text-sm text-muted-foreground">아직 오간 메시지가 없어요.</div>}
-                    >
-                      <For each={messages()}>
-                        {(message) => {
-                          const mine = () => message.sender_user_id === myUserId()
-
-                          return (
-                            <div class={`flex ${mine() ? 'justify-end' : 'justify-start'}`}>
-                              <article
-                                class={`max-w-[88%] rounded-[1.6rem] border px-4 py-3 ${
-                                  mine()
-                                    ? 'border-sky-400/30 bg-sky-500/14 text-sky-50'
-                                    : 'border-white/10 bg-black/20 text-white'
-                                }`}
-                              >
-                                <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/55">
-                                  <span>{mine() ? '나' : message.sender_user_id}</span>
-                                  <span>•</span>
-                                  <span>{formatDateTime(message.created_at)}</span>
-                                </div>
-                                <p class="mt-2 whitespace-pre-wrap break-words text-sm leading-6">{message.content}</p>
-                              </article>
-                            </div>
-                          )
-                        }}
-                      </For>
-                    </Show>
-                  </Show>
                 </div>
 
-                <div class="rounded-3xl border border-white/8 bg-black/20 p-4">
-                  <label class="block">
-                    <span class="mb-2 block text-sm font-medium text-foreground">메시지 남기기</span>
-                    <textarea
-                      rows="4"
-                      value={messageInput()}
-                      onInput={(event) => setMessageInput(event.currentTarget.value)}
-                      placeholder="상대에게 짧게 남길 내용을 적어 주세요."
-                      class="w-full resize-none rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
-                    />
-                  </label>
-                  <div class="mt-4 flex items-center justify-between gap-3">
-                    <p class="text-xs leading-5 text-muted-foreground">현재 연결된 상대에게만 바로 전달됩니다.</p>
+                <Show when={currentMatch().status === 'pending' && isPendingTarget()}>
+                  <div class="mt-4 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => void handleSendMessage()}
-                      disabled={sendingMessage()}
-                      class="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => void handleRespond('accept')}
+                      disabled={respondingAction() !== null}
+                      class="inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {sendingMessage() ? '전송 중…' : '보내기'}
+                      {respondingAction() === 'accept' ? '수락 중…' : '수락'}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleRespond('reject')}
+                      disabled={respondingAction() !== null}
+                      class="inline-flex h-10 items-center justify-center rounded-full border border-border/70 px-5 text-sm font-semibold text-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {respondingAction() === 'reject' ? '거절 중…' : '거절'}
+                    </button>
+                  </div>
+                </Show>
+              </header>
+            )}
+          </Show>
+
+          <Show
+            when={canShowMessages()}
+            fallback={
+              <div class="px-1 py-8" />
+            }
+          >
+            <div>
+              <div ref={messageStreamRef} class="timeline-scrollbar max-h-[48rem] overflow-y-auto">
+                <Show
+                  when={!messagesLoading()}
+                  fallback={<div class="px-1 py-6 text-sm text-muted-foreground">메시지를 불러오는 중…</div>}
+                >
+                  <Show
+                    when={timelineEntries().length > 0}
+                    fallback={<div class="px-1 py-10 text-sm text-muted-foreground">아직 오간 메시지가 없습니다. 첫 문장을 남겨보세요.</div>}
+                  >
+                    <For each={timelineEntries()}>
+                      {(entry) =>
+                        entry.type === 'day' ? (
+                          <div class="sticky top-0 z-10 flex justify-center bg-background/92 py-4 backdrop-blur-md">
+                            <span class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              {entry.label}
+                            </span>
+                          </div>
+                        ) : (
+                          <article class="px-1 py-5">
+                            <div class="flex items-start gap-3">
+                              <A
+                                href={toProfileHref(entry.message.sender_user_id)}
+                                class={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                                  entry.isMine ? 'bg-foreground text-background' : 'bg-secondary text-foreground'
+                                }`}
+                                aria-label={`${entry.handle} 프로필`}
+                              >
+                                {entry.isMine ? 'ME' : buildProfileViewModel(entry.message.sender_user_id, myUserId()).initials}
+                              </A>
+
+                              <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                                  <A href={toProfileHref(entry.message.sender_user_id)} class="font-semibold text-foreground transition hover:text-primary">
+                                    {entry.senderName}
+                                  </A>
+                                  <span class="text-muted-foreground">{entry.handle}</span>
+                                  <span class="text-muted-foreground">·</span>
+                                  <span class="text-muted-foreground">{entry.displayTime}</span>
+                                </div>
+                                <p class="mt-2 whitespace-pre-wrap break-words text-[15px] leading-7 text-foreground">
+                                  {entry.message.content}
+                                </p>
+                              </div>
+                            </div>
+                          </article>
+                        )
+                      }
+                    </For>
+                  </Show>
+                </Show>
+              </div>
+
+              <div class="sticky bottom-0 border-t border-border/70 bg-background/94 px-1 py-4 backdrop-blur-xl">
+                <div class="flex items-start gap-3">
+                  <A
+                    href={toProfileHref(myUserId())}
+                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background"
+                    aria-label={`${selfProfile().handle} 프로필`}
+                  >
+                    ME
+                  </A>
+                  <div class="min-w-0 flex-1">
+                    <label class="block">
+                      <span class="sr-only">메시지 남기기</span>
+                      <textarea
+                        rows="3"
+                        maxLength={MESSAGE_LIMIT}
+                        value={messageInput()}
+                        onInput={(event) => handleMessageInput(event.currentTarget.value)}
+                        onKeyDown={(event) => handleComposerKeyDown(event)}
+                        placeholder="140자 이내로 짧게 남겨보세요."
+                        class="w-full resize-none rounded-none bg-transparent px-0 py-1 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/80"
+                      />
+                    </label>
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <div class={`text-sm ${remainingCharacters() <= 20 ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {remainingCharacters()}자 남음
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void handleSendMessage()}
+                        disabled={!canSendMessage()}
+                        class="inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {sendingMessage() ? '전송 중…' : '보내기'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </Show>
-          </div>
+            </div>
+          </Show>
         </div>
       </Show>
     </section>
