@@ -2,7 +2,6 @@ import { A, useLocation, useNavigate } from '@solidjs/router'
 import { For, Show } from 'solid-js'
 import type { ParentProps } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
-import { loadProfileDraft } from '../features/match/profileDraft'
 import { buildProfileViewModel, toProfileHref } from '../features/match/presentation'
 import ThemeToggle from './ThemeToggle'
 
@@ -23,7 +22,11 @@ export default function AuthenticatedLayout(props: ParentProps) {
 
   const currentUserId = () => auth.session()?.user_id ?? ''
   const currentProfile = () =>
-    buildProfileViewModel(currentUserId(), currentUserId(), loadProfileDraft(currentUserId()) ?? undefined)
+    buildProfileViewModel(currentUserId(), currentUserId(), {
+      displayName: auth.session()?.display_name,
+      avatarUrl: auth.session()?.avatar_url,
+      bio: auth.session()?.bio,
+    })
 
   const navLinkClass = (path: string) =>
     `inline-flex h-9 items-center justify-center border-b-2 px-1 text-sm font-semibold transition-colors ${
@@ -53,9 +56,12 @@ export default function AuthenticatedLayout(props: ParentProps) {
                 class="inline-flex h-9 items-center justify-center rounded-full border border-border/70 px-3 text-sm font-medium text-foreground transition hover:border-foreground/20 md:hidden"
                 aria-label={`${currentProfile().handle} 프로필`}
               >
-                <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">
-                  {currentProfile().initials}
-                </span>
+                <Show
+                  when={currentProfile().avatarUrl}
+                  fallback={<span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">{currentProfile().initials}</span>}
+                >
+                  {(avatarUrl) => <img src={avatarUrl()} alt="" class="h-6 w-6 rounded-full object-cover" />}
+                </Show>
               </A>
             </Show>
 
@@ -64,9 +70,12 @@ export default function AuthenticatedLayout(props: ParentProps) {
                 href={toProfileHref(currentUserId())}
                 class="hidden items-center gap-2 rounded-full border border-border/70 px-3 py-1.5 text-sm font-medium text-foreground transition hover:border-foreground/20 md:inline-flex"
               >
-                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">
-                  {currentProfile().initials}
-                </span>
+                <Show
+                  when={currentProfile().avatarUrl}
+                  fallback={<span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">{currentProfile().initials}</span>}
+                >
+                  {(avatarUrl) => <img src={avatarUrl()} alt="" class="h-7 w-7 rounded-full object-cover" />}
+                </Show>
                 <span class="max-w-[10rem] truncate">{currentProfile().handle}</span>
               </A>
             </Show>

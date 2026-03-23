@@ -18,10 +18,22 @@ export type AuthTokenResponse = {
 export type MeResponse = {
   user_id: string
   user_role: string
+  display_name: string | null
+  avatar_url: string | null
+  bio: string | null
 }
 
 export type AuthSession = AuthTokenResponse & {
   user_id: string
+  display_name: string | null
+  avatar_url: string | null
+  bio: string | null
+}
+
+export type UpdateMyProfilePayload = {
+  display_name: string
+  avatar_url: string
+  bio: string
 }
 
 type SignupResponse = {
@@ -55,6 +67,9 @@ async function createAuthSession(tokens: AuthTokenResponse): Promise<AuthSession
   return {
     ...tokens,
     user_id: me.user_id,
+    display_name: me.display_name,
+    avatar_url: me.avatar_url,
+    bio: me.bio,
   }
 }
 
@@ -155,6 +170,23 @@ export async function fetchMe(accessToken: string): Promise<MeResponse> {
   if (!response.ok) {
     const bodyText = await response.text()
     throw new Error(`API ${response.status}: ${bodyText || '사용자 정보 조회 실패'}`)
+  }
+
+  return response.json()
+}
+
+export async function updateMyProfile(accessToken: string, payload: UpdateMyProfilePayload): Promise<MeResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/me/profile`, {
+    method: 'PUT',
+    headers: createAuthorizedHeaders(accessToken, {
+      'Content-Type': 'application/json',
+    }),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const bodyText = await response.text()
+    throw new Error(`API ${response.status}: ${bodyText || '프로필 저장 실패'}`)
   }
 
   return response.json()

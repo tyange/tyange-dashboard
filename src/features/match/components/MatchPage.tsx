@@ -2,7 +2,6 @@ import { A } from '@solidjs/router'
 import { For, Show, createEffect, createMemo, createSignal, onMount } from 'solid-js'
 import { useAuth } from '../../../auth/AuthProvider'
 import { createMatch, createMatchMessage, deleteMyMatch, fetchMatchMessages, fetchMyMatch, respondMatch } from '../api'
-import { loadProfileDraft } from '../profileDraft'
 import {
   buildProfileViewModel,
   buildTimelineEntries,
@@ -39,8 +38,13 @@ export default function MatchPage() {
   const trimmedMessageInput = createMemo(() => messageInput().trim())
   const remainingCharacters = createMemo(() => MESSAGE_LIMIT - messageInput().length)
   const canSendMessage = createMemo(() => canShowMessages() && !sendingMessage() && trimmedMessageInput().length > 0)
-  const selfDraft = createMemo(() => loadProfileDraft(myUserId()) ?? undefined)
-  const selfProfile = createMemo(() => buildProfileViewModel(myUserId() || 'me', myUserId(), selfDraft()))
+  const selfProfile = createMemo(() =>
+    buildProfileViewModel(myUserId() || 'me', myUserId(), {
+      displayName: auth.session()?.display_name,
+      avatarUrl: auth.session()?.avatar_url,
+      bio: auth.session()?.bio,
+    }),
+  )
   const counterpartProfile = createMemo(() => {
     const counterpartUserId = matchSummary()?.counterpart_user_id
     return counterpartUserId ? buildProfileViewModel(counterpartUserId, myUserId()) : null
@@ -392,12 +396,17 @@ export default function MatchPage() {
                             <div class="flex items-start gap-3">
                               <A
                                 href={toProfileHref(entry.message.sender_user_id)}
-                                class={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                                class={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold ${
                                   entry.isMine ? 'bg-foreground text-background' : 'bg-secondary text-foreground'
                                 }`}
                                 aria-label={`${entry.handle} 프로필`}
                               >
-                                {entry.isMine ? 'ME' : buildProfileViewModel(entry.message.sender_user_id, myUserId()).initials}
+                                <Show
+                                  when={entry.isMine && selfProfile().avatarUrl}
+                                  fallback={<>{entry.isMine ? 'ME' : buildProfileViewModel(entry.message.sender_user_id, myUserId()).initials}</>}
+                                >
+                                  {(avatarUrl) => <img src={avatarUrl()} alt="" class="h-full w-full object-cover" />}
+                                </Show>
                               </A>
 
                               <div class="min-w-0 flex-1">
@@ -426,10 +435,12 @@ export default function MatchPage() {
                 <div class="flex items-start gap-3">
                   <A
                     href={toProfileHref(myUserId())}
-                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-semibold text-background"
+                    class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground text-sm font-semibold text-background"
                     aria-label={`${selfProfile().handle} 프로필`}
                   >
-                    ME
+                    <Show when={selfProfile().avatarUrl} fallback={<>ME</>}>
+                      {(avatarUrl) => <img src={avatarUrl()} alt="" class="h-full w-full object-cover" />}
+                    </Show>
                   </A>
                   <div class="min-w-0 flex-1">
                     <label class="block">

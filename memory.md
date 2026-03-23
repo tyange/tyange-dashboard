@@ -36,7 +36,6 @@ Last updated: 2026-03-23 (Asia/Seoul)
 - Match UI: `src/features/match/*`
 - Match profile page UI: `src/features/match/components/ProfilePage.tsx`
 - Match presentation helpers: `src/features/match/presentation.ts`
-- Match local profile draft storage: `src/features/match/profileDraft.ts`
 - Budget domain: `src/features/budget/*`
 - Main API layer: `src/features/budget/api.ts`
 - Custom PWA service worker: `src/sw.ts`
@@ -62,12 +61,13 @@ Last updated: 2026-03-23 (Asia/Seoul)
 - 1:1 메시지 허브는 트위터형 단일 타임라인 컬럼을 우선하고, 카드로 화면을 과도하게 분절하지 않는다
 - 메시지 허브와 프로필 페이지는 설명 문구를 최소화하고, 상태 안내도 한두 줄 이내의 유틸리티 카피로 유지한다
 - 대시보드 첫 화면은 `1:1 TIMELINE` 라벨과 입력 영역만 남기고, 설명성 헤드라인과 빈 상태 문구를 두지 않는다
-- 프로필 페이지는 현재 `user_id`와 활성 매칭 상태만으로 구성한 placeholder 프로필을 사용하며, 실제 avatar/bio/display name API가 들어오기 전까지 결정적 파생값을 노출한다
+- 프로필 페이지는 자기 자신의 경우 `/me` 기반 실제 `display_name` / `avatar_url` / `bio`를 우선 사용하고, 상대 사용자 프로필은 별도 조회 API가 없으므로 계속 `user_id` 기반 placeholder를 사용한다
 - Settings page includes API key management for the currently logged-in user
-- Settings page also manages the current user's local profile draft and current 1:1 match status/teardown
+- Settings page also manages the current user's persisted server profile and current 1:1 match status/teardown
 - 알림 관리는 설정 페이지 내부 섹션으로만 노출하고, 등록된 브라우저 알림 목록은 해당 섹션 바로 아래에 보여준다
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
 - Email/password login and Google login both converge on the same stored JWT session shape in `localStorage`
+- Stored auth session now includes `/me` profile fields `display_name`, `avatar_url`, `bio`
 - Authenticated navigation uses a top header with pill-style tabs instead of a sidebar
 - Authenticated layout owns the effective max width for both header and main content; page-level custom max-width wrappers는 최소화한다
 - Authenticated header keeps the primary tabs as `타임라인`, `설정` only; profile access is handled by a right-side identity chip
@@ -77,6 +77,7 @@ Last updated: 2026-03-23 (Asia/Seoul)
 - API errors are surfaced in UI as a top error alert block
 - API key management uses `GET /api-keys`, `POST /api-keys`, and `DELETE /api-keys/:id` with JWT auth; plaintext keys are shown only immediately after creation and never reloaded from the list API
 - 1:1 매칭 페이지는 `GET /match/me`, `POST /match/request`, `POST /match/:match_id/respond`, `DELETE /match/me`, `GET/POST /match/messages`를 사용하며, `pending`이면 신청/응답 상태를, `matched`이면 메시지 타임라인을 렌더링한다
+- 내 프로필 편집은 `PUT /me/profile`을 사용하고, Google 로그인 최초 생성/연결 시 CMS API가 `display_name` / `avatar_url` 기본값을 저장한다
 - 알림 관리 페이지는 초기 진입 시 `/push/public-key`, `/push/subscriptions`를 조회하고, 브라우저 로컬 `PushSubscription`과 서버 저장 구독을 정합해 현재 브라우저 상태를 표시한다
 - `/push/public-key`의 503은 서버 미설정 정상 분기이며, 알림 페이지는 이를 `unavailable` 상태로 처리해 푸시 등록 CTA를 비활성화하고 안내 문구를 보여준다
 - 웹 푸시는 Vite PWA `injectManifest` 기반 커스텀 서비스 워커(`src/sw.ts`)에서 `push`와 `notificationclick`을 처리하며, 페이지 컴포넌트에는 서비스 워커 로직을 넣지 않는다

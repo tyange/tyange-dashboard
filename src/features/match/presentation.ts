@@ -7,9 +7,16 @@ export type ProfileViewModel = {
   handle: string
   displayName: string
   initials: string
+  avatarUrl: string | null
   bio: string
   note: string
   tone: ProfileTone
+}
+
+export type ProfileIdentitySource = {
+  displayName?: string | null
+  avatarUrl?: string | null
+  bio?: string | null
 }
 
 export type RelationshipKind = 'self' | 'matched' | 'pending-outgoing' | 'pending-incoming' | 'inactive'
@@ -120,20 +127,22 @@ export function toProfileHref(userId: string) {
 export function buildProfileViewModel(
   userId: string,
   currentUserId?: string,
-  overrides?: Partial<Pick<ProfileViewModel, 'displayName' | 'bio'>>,
+  source?: ProfileIdentitySource,
 ): ProfileViewModel {
   const normalized = userId.trim() || 'user'
   const hash = hashString(normalized)
   const isSelf = Boolean(currentUserId) && normalized === currentUserId
+  const displayName = source?.displayName?.trim()
+  const bio = source?.bio?.trim()
+  const avatarUrl = source?.avatarUrl?.trim()
 
   return {
     userId: normalized,
     handle: `@${normalized}`,
-    displayName: overrides?.displayName?.trim() || (isSelf ? '나' : prettifyUserId(normalized)),
+    displayName: displayName || (isSelf ? '나' : prettifyUserId(normalized)),
     initials: isSelf ? 'ME' : buildInitials(normalized),
-    bio:
-      overrides?.bio?.trim() ||
-      (isSelf ? '지금 열려 있는 1:1 타임라인을 관리하는 내 프로필 미리보기입니다.' : PROFILE_BIOS[hash % PROFILE_BIOS.length]),
+    avatarUrl: avatarUrl || null,
+    bio: bio || (isSelf ? '지금 열려 있는 1:1 타임라인을 관리하는 내 프로필 미리보기입니다.' : PROFILE_BIOS[hash % PROFILE_BIOS.length]),
     note: isSelf
       ? '실제 프로필 API 연결 전까지는 내 계정 ID와 현재 연결 상태를 기준으로 보여줍니다.'
       : PROFILE_NOTES[(hash >> 3) % PROFILE_NOTES.length],

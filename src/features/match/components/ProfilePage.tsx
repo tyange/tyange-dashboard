@@ -2,7 +2,6 @@ import { A, useParams } from '@solidjs/router'
 import { For, Show, createMemo, createSignal, onMount } from 'solid-js'
 import { useAuth } from '../../../auth/AuthProvider'
 import { fetchMatchMessages, fetchMyMatch } from '../api'
-import { loadProfileDraft } from '../profileDraft'
 import {
   buildProfileViewModel,
   buildRelationshipState,
@@ -35,12 +34,17 @@ export default function ProfilePage() {
 
   const myUserId = createMemo(() => auth.session()?.user_id ?? '')
   const profileUserId = createMemo(() => decodeRouteUserId(params.userId))
-  const selfDraft = createMemo(() => loadProfileDraft(myUserId()) ?? undefined)
   const profile = createMemo(() =>
     buildProfileViewModel(
       profileUserId(),
       myUserId(),
-      profileUserId() === myUserId() ? selfDraft() : undefined,
+      profileUserId() === myUserId()
+        ? {
+            displayName: auth.session()?.display_name,
+            avatarUrl: auth.session()?.avatar_url,
+            bio: auth.session()?.bio,
+          }
+        : undefined,
     ),
   )
   const relationship = createMemo(() => buildRelationshipState(matchSummary(), myUserId(), profileUserId()))
@@ -80,7 +84,7 @@ export default function ProfilePage() {
 
       <Show when={errorMessage()}>
         {(message) => (
-          <div class="rounded-[1.5rem] border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+          <div class="px-1 py-3 text-sm text-rose-700 dark:text-rose-300">
             {message()}
           </div>
         )}
@@ -95,13 +99,20 @@ export default function ProfilePage() {
         }
       >
         <div>
-          <header class="border-b border-border/70 pb-6">
+          <header class="pb-6">
             <div class="flex items-start gap-4">
-              <div
-                class={`flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br ${getProfileToneClasses(profile().tone)} text-lg font-semibold text-foreground`}
+              <Show
+                when={profile().avatarUrl}
+                fallback={
+                  <div
+                    class={`flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br ${getProfileToneClasses(profile().tone)} text-lg font-semibold text-foreground`}
+                  >
+                    {profile().initials}
+                  </div>
+                }
               >
-                {profile().initials}
-              </div>
+                {(avatarUrl) => <img src={avatarUrl()} alt="" class="h-16 w-16 rounded-full object-cover" />}
+              </Show>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                   <h1 class="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{profile().displayName}</h1>
@@ -117,7 +128,7 @@ export default function ProfilePage() {
             </div>
           </header>
 
-          <div class="border-b border-border/60 py-5">
+          <div class="py-5">
             <p class="text-sm text-muted-foreground">{relationship().description}</p>
           </div>
 
@@ -153,13 +164,20 @@ export default function ProfilePage() {
                         {entry.label}
                       </div>
                     ) : (
-                      <article class="border-b border-border/60 py-4">
+                      <article class="py-4">
                         <div class="flex items-start gap-3">
-                          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground">
-                            {entry.message.sender_user_id === myUserId()
-                              ? 'ME'
-                              : buildProfileViewModel(entry.message.sender_user_id, myUserId()).initials}
-                          </div>
+                          <Show
+                            when={entry.message.sender_user_id === myUserId() && profile().avatarUrl}
+                            fallback={
+                              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground">
+                                {entry.message.sender_user_id === myUserId()
+                                  ? 'ME'
+                                  : buildProfileViewModel(entry.message.sender_user_id, myUserId()).initials}
+                              </div>
+                            }
+                          >
+                            {(avatarUrl) => <img src={avatarUrl()} alt="" class="h-10 w-10 rounded-full object-cover" />}
+                          </Show>
                           <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                               <span class="font-semibold text-foreground">{entry.senderName}</span>

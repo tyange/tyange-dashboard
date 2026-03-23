@@ -4,12 +4,17 @@ import type { MatchMessage, MatchSummary } from './types'
 
 describe('match presentation helpers', () => {
   it('builds a deterministic self profile view model', () => {
-    const profile = buildProfileViewModel('me@example.com', 'me@example.com')
+    const profile = buildProfileViewModel('me@example.com', 'me@example.com', {
+      displayName: '테스터',
+      avatarUrl: 'https://example.com/me.png',
+      bio: '실제 프로필',
+    })
 
-    expect(profile.displayName).toBe('나')
+    expect(profile.displayName).toBe('테스터')
     expect(profile.handle).toBe('@me@example.com')
     expect(profile.initials).toBe('ME')
-    expect(profile.bio).toContain('내 프로필')
+    expect(profile.avatarUrl).toBe('https://example.com/me.png')
+    expect(profile.bio).toBe('실제 프로필')
   })
 
   it('maps pending incoming relationships for the counterpart profile', () => {

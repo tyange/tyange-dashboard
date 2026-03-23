@@ -35,6 +35,9 @@ describe('auth api', () => {
           JSON.stringify({
             user_id: 'tester',
             user_role: 'user',
+            display_name: 'Tester',
+            avatar_url: 'https://example.com/avatar.png',
+            bio: '소개',
           }),
           {
             status: 200,
@@ -50,6 +53,9 @@ describe('auth api', () => {
       refresh_token: 'refresh-token',
       user_id: 'tester',
       user_role: 'user',
+      display_name: 'Tester',
+      avatar_url: 'https://example.com/avatar.png',
+      bio: '소개',
     })
   })
 

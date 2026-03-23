@@ -8,6 +8,7 @@ import {
   loginRequest,
   storeSession,
   type AuthSession,
+  type MeResponse,
 } from './api'
 
 export type AuthStatus = 'unknown' | 'guest' | 'authenticated'
@@ -16,6 +17,7 @@ export type AuthContextValue = {
   status: () => AuthStatus
   isAuthenticated: () => boolean
   session: () => AuthSession | null
+  applyMe: (me: MeResponse) => void
   login: (userId: string, password: string) => Promise<void>
   loginWithGoogle: (idToken: string) => Promise<void>
   logout: () => void
@@ -33,6 +35,23 @@ export function AuthProvider(props: ParentProps): JSX.Element {
     setStatus('authenticated')
   }
 
+  const applyMe = (me: MeResponse) => {
+    const currentSession = session()
+
+    if (!currentSession) {
+      return
+    }
+
+    applyAuthenticatedSession({
+      ...currentSession,
+      user_id: me.user_id,
+      user_role: me.user_role,
+      display_name: me.display_name,
+      avatar_url: me.avatar_url,
+      bio: me.bio,
+    })
+  }
+
   onMount(() => {
     const storedSession = loadStoredSession()
 
@@ -47,6 +66,9 @@ export function AuthProvider(props: ParentProps): JSX.Element {
           ...storedSession,
           user_id: me.user_id,
           user_role: me.user_role,
+          display_name: me.display_name,
+          avatar_url: me.avatar_url,
+          bio: me.bio,
         }
 
         applyAuthenticatedSession(nextSession)
@@ -62,6 +84,7 @@ export function AuthProvider(props: ParentProps): JSX.Element {
     status,
     session,
     isAuthenticated: () => status() === 'authenticated',
+    applyMe,
     login: async (userId, password) => {
       const nextSession = await loginRequest({ user_id: userId, password })
       applyAuthenticatedSession(nextSession)

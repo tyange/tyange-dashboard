@@ -1,18 +1,26 @@
 import { A } from '@solidjs/router'
-import { Show, createMemo, createSignal, onMount } from 'solid-js'
+import { Show, createEffect, createMemo, createSignal, onMount } from 'solid-js'
 import { useAuth } from '../auth/AuthProvider'
+import { getRequiredAccessToken, updateMyProfile } from '../auth/api'
 import ApiKeysPage from '../features/api-keys/components/ApiKeysPage'
 import { deleteMyMatch, fetchMyMatch } from '../features/match/api'
-import { clearProfileDraft, loadProfileDraft, profileDraftLimits, saveProfileDraft } from '../features/match/profileDraft'
 import { buildProfileViewModel, formatMatchDateTime, getStatusBadgeClass, getStatusLabel, toProfileHref } from '../features/match/presentation'
 import type { MatchSummary } from '../features/match/types'
 import BrowserAlertsSettingsSection from '../features/notifications/components/BrowserAlertsSettingsSection'
 
+const PROFILE_LIMITS = {
+  displayName: 32,
+  avatarUrl: 512,
+  bio: 160,
+} as const
+
 export default function SettingsPage() {
   const auth = useAuth()
   const [displayName, setDisplayName] = createSignal('')
+  const [avatarUrl, setAvatarUrl] = createSignal('')
   const [bio, setBio] = createSignal('')
   const [profileMessage, setProfileMessage] = createSignal<string | null>(null)
+  const [savingProfile, setSavingProfile] = createSignal(false)
   const [matchSummary, setMatchSummary] = createSignal<MatchSummary | null>(null)
   const [matchLoading, setMatchLoading] = createSignal(true)
   const [matchErrorMessage, setMatchErrorMessage] = createSignal<string | null>(null)
@@ -22,6 +30,7 @@ export default function SettingsPage() {
   const profile = createMemo(() =>
     buildProfileViewModel(userId(), userId(), {
       displayName: displayName(),
+      avatarUrl: avatarUrl(),
       bio: bio(),
     }),
   )
@@ -40,26 +49,63 @@ export default function SettingsPage() {
     }
   }
 
+  createEffect(() => {
+    setDisplayName(auth.session()?.display_name ?? '')
+    setAvatarUrl(auth.session()?.avatar_url ?? '')
+    setBio(auth.session()?.bio ?? '')
+  })
+
   onMount(() => {
-    const draft = loadProfileDraft(userId())
-    setDisplayName(draft?.displayName ?? '')
-    setBio(draft?.bio ?? '')
     void loadMatch()
   })
 
-  const handleSaveProfile = () => {
-    saveProfileDraft(userId(), {
-      displayName: displayName(),
-      bio: bio(),
-    })
-    setProfileMessage('프로필을 저장했어요.')
+  const handleSaveProfile = async () => {
+    if (savingProfile()) {
+      return
+    }
+
+    setSavingProfile(true)
+    setProfileMessage(null)
+    setMatchErrorMessage(null)
+
+    try {
+      const nextMe = await updateMyProfile(getRequiredAccessToken(), {
+        display_name: displayName(),
+        avatar_url: avatarUrl(),
+        bio: bio(),
+      })
+      auth.applyMe(nextMe)
+      setProfileMessage('프로필을 저장했어요.')
+    } catch (error) {
+      setProfileMessage((error as Error).message)
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
-  const handleResetProfile = () => {
-    clearProfileDraft(userId())
+  const handleResetProfile = async () => {
+    if (savingProfile()) {
+      return
+    }
+
     setDisplayName('')
+    setAvatarUrl('')
     setBio('')
-    setProfileMessage('프로필을 기본 상태로 되돌렸어요.')
+    setSavingProfile(true)
+
+    try {
+      const nextMe = await updateMyProfile(getRequiredAccessToken(), {
+        display_name: '',
+        avatar_url: '',
+        bio: '',
+      })
+      auth.applyMe(nextMe)
+      setProfileMessage('프로필을 비웠어요.')
+    } catch (error) {
+      setProfileMessage((error as Error).message)
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
   const handleDisconnect = async () => {
@@ -100,9 +146,12 @@ export default function SettingsPage() {
         </div>
 
         <div class="mt-5 flex items-start gap-4 pt-1">
-          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground">
-            {profile().initials}
-          </div>
+          <Show
+            when={profile().avatarUrl}
+            fallback={<div class="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground">{profile().initials}</div>}
+          >
+            {(src) => <img src={src()} alt="" class="h-12 w-12 rounded-full object-cover" />}
+          </Show>
           <div class="min-w-0 flex-1">
             <p class="text-lg font-semibold text-foreground">{profile().displayName}</p>
             <p class="mt-1 text-sm text-muted-foreground">{profile().handle}</p>
@@ -115,9 +164,21 @@ export default function SettingsPage() {
             <input
               type="text"
               value={displayName()}
-              maxLength={profileDraftLimits.displayName}
+              maxLength={PROFILE_LIMITS.displayName}
               onInput={(event) => setDisplayName(event.currentTarget.value)}
               placeholder="기본값 사용"
+              class="w-full border-b border-border/80 bg-transparent px-0 py-3 text-sm text-foreground outline-none transition focus:border-foreground"
+            />
+          </label>
+
+          <label class="block max-w-xl">
+            <span class="mb-2 block text-xs uppercase tracking-[0.16em] text-muted-foreground">프로필 사진 URL</span>
+            <input
+              type="url"
+              value={avatarUrl()}
+              maxLength={PROFILE_LIMITS.avatarUrl}
+              onInput={(event) => setAvatarUrl(event.currentTarget.value)}
+              placeholder="Google 기본값 또는 직접 입력"
               class="w-full border-b border-border/80 bg-transparent px-0 py-3 text-sm text-foreground outline-none transition focus:border-foreground"
             />
           </label>
@@ -127,7 +188,7 @@ export default function SettingsPage() {
             <textarea
               rows="3"
               value={bio()}
-              maxLength={profileDraftLimits.bio}
+              maxLength={PROFILE_LIMITS.bio}
               onInput={(event) => setBio(event.currentTarget.value)}
               placeholder="기본값 사용"
               class="w-full border-b border-border/80 bg-transparent px-0 py-3 text-sm leading-6 text-foreground outline-none transition focus:border-foreground"
@@ -137,23 +198,25 @@ export default function SettingsPage() {
           <div class="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={handleSaveProfile}
-              class="inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92"
+              onClick={() => void handleSaveProfile()}
+              disabled={savingProfile()}
+              class="inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              저장
+              {savingProfile() ? '저장 중…' : '저장'}
             </button>
             <button
               type="button"
-              onClick={handleResetProfile}
-              class="inline-flex h-10 items-center justify-center rounded-full border border-border/70 px-5 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              onClick={() => void handleResetProfile()}
+              disabled={savingProfile()}
+              class="inline-flex h-10 items-center justify-center rounded-full border border-border/70 px-5 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
             >
-              기본값으로
+              비우기
             </button>
-            <span class="text-sm text-muted-foreground">{bio().length}/{profileDraftLimits.bio}</span>
+            <span class="text-sm text-muted-foreground">{bio().length}/{PROFILE_LIMITS.bio}</span>
           </div>
 
           <Show when={profileMessage()}>
-            {(message) => <p class="text-sm text-emerald-600">{message()}</p>}
+            {(message) => <p class={`text-sm ${message().startsWith('API ') ? 'text-rose-600' : 'text-emerald-600'}`}>{message()}</p>}
           </Show>
         </div>
       </section>

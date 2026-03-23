@@ -5,6 +5,9 @@ const authSession = {
   refresh_token: 'playwright-refresh-token',
   user_id: 'playwright-user',
   user_role: 'user',
+  display_name: '플레이라이트 유저',
+  avatar_url: 'https://example.com/playwright-user.png',
+  bio: '테스트 프로필',
 } as const
 
 type MatchFixture = {
@@ -24,6 +27,9 @@ async function mockAuthenticatedMatchApp(page: Parameters<typeof test>[0]['page'
       body: JSON.stringify({
         user_id: authSession.user_id,
         user_role: authSession.user_role,
+        display_name: authSession.display_name,
+        avatar_url: authSession.avatar_url,
+        bio: authSession.bio,
       }),
     })
   })
@@ -75,7 +81,7 @@ test('dashboard shows connect state when no active match exists', async ({ page 
 
   await page.goto('/dashboard')
 
-  await expect(page.getByRole('heading', { name: '한 사람과의 대화를 타임라인처럼 이어가세요' })).toBeVisible()
+  await expect(page.getByText('1:1 timeline', { exact: true })).toBeVisible()
   await expect(page.getByText('상대 사용자 ID', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '요청 보내기' })).toBeVisible()
 })
