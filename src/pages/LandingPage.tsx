@@ -5,6 +5,8 @@ import ThemeToggle from '../components/ThemeToggle'
 
 export default function LandingPage() {
   const auth = useAuth()
+  const primaryCtaClass =
+    'inline-flex items-center justify-center rounded-full border border-[#c8d6ee] bg-[#dbe6f7] px-6 py-3 text-sm font-semibold text-slate-900 shadow-[0_18px_36px_-26px_rgba(100,116,139,0.32)] transition hover:bg-[#d4e0f4] dark:border-primary/20 dark:bg-primary dark:text-primary-foreground dark:shadow-none'
 
   return (
     <main class="relative overflow-hidden">
@@ -28,7 +30,7 @@ export default function LandingPage() {
               fallback={
                 <A
                   href="/login?next=%2Fdashboard"
-                  class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                  class={primaryCtaClass}
                 >
                   Google로 시작하기
                 </A>
@@ -36,7 +38,7 @@ export default function LandingPage() {
             >
               <A
                 href="/dashboard"
-                class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                class={primaryCtaClass}
               >
                 새 글 보기
               </A>
