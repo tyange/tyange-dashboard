@@ -6,7 +6,6 @@ import {
   buildProfileViewModel,
   buildTimelineEntries,
   formatMatchDateTime,
-  getProfileToneClasses,
   getStatusBadgeClass,
   getStatusLabel,
   toProfileHref,
@@ -45,29 +44,7 @@ export default function MatchPage() {
       bio: auth.session()?.bio,
     }),
   )
-  const counterpartProfile = createMemo(() => {
-    const counterpartUserId = matchSummary()?.counterpart_user_id
-    return counterpartUserId ? buildProfileViewModel(counterpartUserId, myUserId()) : null
-  })
   const timelineEntries = createMemo(() => buildTimelineEntries(messages(), myUserId()))
-  const lastMessage = createMemo(() => messages().at(-1) ?? null)
-  const connectionDescription = createMemo(() => {
-    const currentMatch = matchSummary()
-
-    if (!currentMatch) {
-      return '상대 사용자 ID를 입력하면 요청을 보내고, 수락 즉시 이 화면이 1:1 타임라인으로 바뀝니다.'
-    }
-
-    if (currentMatch.status === 'matched') {
-      return '연결이 확정되었습니다. 프로필과 대화 흐름을 같은 화면에서 자연스럽게 오갈 수 있습니다.'
-    }
-
-    if (isPendingTarget()) {
-      return '내가 응답하면 바로 타임라인이 열립니다. 수락 또는 거절을 선택하세요.'
-    }
-
-    return '상대가 이 요청을 확인하는 중입니다. 수락되면 아래 타임라인 composer가 활성화됩니다.'
-  })
 
   createEffect(() => {
     messages()
@@ -297,73 +274,68 @@ export default function MatchPage() {
             }
           >
             {(currentMatch) => (
-              <header class="px-1 py-4">
-                <div class="flex items-start gap-3">
-                  <A
-                    href={toProfileHref(currentMatch().counterpart_user_id)}
-                    class={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${getProfileToneClasses(counterpartProfile()?.tone ?? selfProfile().tone)} text-sm font-semibold text-foreground`}
-                    aria-label={`${currentMatch().counterpart_user_id} 프로필`}
-                  >
-                    {counterpartProfile()?.initials ?? selfProfile().initials}
-                  </A>
-                  <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Show when={currentMatch().status !== 'matched'}>
+                <header class="px-1 py-4">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <div class="flex flex-wrap items-center gap-3">
+                        <A
+                          href={toProfileHref(currentMatch().counterpart_user_id)}
+                          class="text-lg font-semibold tracking-tight text-foreground transition hover:text-primary"
+                        >
+                          @{currentMatch().counterpart_user_id}
+                        </A>
+                        <span class={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getStatusBadgeClass(currentMatch().status)}`}>
+                          {getStatusLabel(currentMatch().status)}
+                        </span>
+                        <span class="text-sm text-muted-foreground">{formatMatchDateTime(currentMatch().created_at)}</span>
+                      </div>
+                      <p class="mt-2 text-sm text-muted-foreground">
+                        {isPendingTarget()
+                          ? '내가 응답하면 바로 타임라인이 열립니다. 수락 또는 거절을 선택하세요.'
+                          : '상대가 이 요청을 확인하는 중입니다. 수락되면 아래 타임라인 composer가 활성화됩니다.'}
+                      </p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
                       <A
                         href={toProfileHref(currentMatch().counterpart_user_id)}
-                        class="truncate text-lg font-semibold tracking-tight text-foreground transition hover:text-primary"
+                        class="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
                       >
-                        @{currentMatch().counterpart_user_id}
+                        프로필
                       </A>
-                      <span class={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getStatusBadgeClass(currentMatch().status)}`}>
-                        {getStatusLabel(currentMatch().status)}
-                      </span>
-                      <span class="text-sm text-muted-foreground">
-                        {lastMessage()
-                          ? `${messages().length}개 메시지`
-                          : formatMatchDateTime(currentMatch().created_at)}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void handleCloseMatch()}
+                        disabled={closingMatch()}
+                        class="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {closingMatch() ? '처리 중…' : '요청 취소'}
+                      </button>
                     </div>
-                    <p class="mt-2 text-sm text-muted-foreground">{connectionDescription()}</p>
                   </div>
-                  <div class="flex shrink-0 items-center gap-2">
-                    <A
-                      href={toProfileHref(currentMatch().counterpart_user_id)}
-                      class="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-                    >
-                      프로필
-                    </A>
-                    <button
-                      type="button"
-                      onClick={() => void handleCloseMatch()}
-                      disabled={closingMatch()}
-                      class="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {closingMatch() ? '처리 중…' : currentMatch().status === 'matched' ? '연결 해제' : '요청 취소'}
-                    </button>
-                  </div>
-                </div>
 
-                <Show when={currentMatch().status === 'pending' && isPendingTarget()}>
-                  <div class="mt-4 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleRespond('accept')}
-                      disabled={respondingAction() !== null}
-                      class="inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {respondingAction() === 'accept' ? '수락 중…' : '수락'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleRespond('reject')}
-                      disabled={respondingAction() !== null}
-                      class="inline-flex h-10 items-center justify-center rounded-full border border-border/70 px-5 text-sm font-semibold text-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {respondingAction() === 'reject' ? '거절 중…' : '거절'}
-                    </button>
-                  </div>
-                </Show>
-              </header>
+                  <Show when={isPendingTarget()}>
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void handleRespond('accept')}
+                        disabled={respondingAction() !== null}
+                        class="inline-flex h-10 items-center justify-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {respondingAction() === 'accept' ? '수락 중…' : '수락'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleRespond('reject')}
+                        disabled={respondingAction() !== null}
+                        class="inline-flex h-10 items-center justify-center rounded-full border border-border/70 px-5 text-sm font-semibold text-foreground transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {respondingAction() === 'reject' ? '거절 중…' : '거절'}
+                      </button>
+                    </div>
+                  </Show>
+                </header>
+              </Show>
             )}
           </Show>
 

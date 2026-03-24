@@ -64,6 +64,8 @@ Last updated: 2026-03-23 (Asia/Seoul)
 - 프로필 페이지는 자기 자신의 경우 `/me` 기반 실제 `display_name` / `avatar_url` / `bio`를 우선 사용하고, 상대 사용자 프로필은 별도 조회 API가 없으므로 계속 `user_id` 기반 placeholder를 사용한다
 - Settings page includes API key management for the currently logged-in user
 - Settings page also manages the current user's persisted server profile and current 1:1 match status/teardown
+- 설정 페이지의 `현재 상태` 섹션은 연결이 있을 때 대시보드 상단과 같은 요약 영역(상대 프로필 링크, 상태 배지, 메시지 수/생성 시각, 연결 해제 액션)을 보여준다
+- 타임라인 페이지는 `matched` 상태에서 상단 연결 요약 헤더를 다시 반복하지 않고, 메시지 흐름과 composer에 집중한다. 연결 요약은 설정의 `현재 상태`에서 확인한다
 - 알림 관리는 설정 페이지 내부 섹션으로만 노출하고, 등록된 브라우저 알림 목록은 해당 섹션 바로 아래에 보여준다
 - Auth state uses `unknown | guest | authenticated` and restores persisted JWT session from `localStorage`
 - Email/password login and Google login both converge on the same stored JWT session shape in `localStorage`
